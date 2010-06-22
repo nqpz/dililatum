@@ -23,13 +23,20 @@
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
 ##[ Description ]## Contains the generic form of the Place class
 
-import numpy
+import pygame
+from pygame.locals import *
 from questylib.bitmap import BitMap
 
-class GenericPlace:
-    def __init__(self, name, size, posfile=None):
-        self.name = name
-        self.size = size
+class Place:
+    def __init__(self, world, idname, imgfile=None, posfile=None):
+        self.world = world
+        self.id = idname
+        self.objects = []
+        if imgfile is not None:
+            self.surf = self.load_imgfile(imgfile)
+        else:
+            self.surf = None
+
         if posfile is not None:
             self.posoks = self.load_posfile(posfile)
         else:
@@ -39,15 +46,26 @@ class GenericPlace:
         return 1
 
     def char_pos(self, pos):
-        return 1
+        return pos
 
     def pos_ok(self, pos):
         if self.posoks is None:
             return True
         else:
-            return self.posoks.get(pos[0], pos[1])
+            return self.posoks.get(*pos)
+
+    def load_imgfile(self, filename):
+        return pygame.image.load(filename).convert()
 
     def load_posfile(self, filename):
-        bm = BitMap(size[0], size[1])
+        bm = BitMap(*self.world.size)
         bm.load(filename)
         return bm
+
+    def draw(self, surf=None):
+        if surf is None:
+            surf = self.world.screen
+        surf.blit(self.surf, (0, 0))
+        for obj in self.objects:
+            obj.draw()
+

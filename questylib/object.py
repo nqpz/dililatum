@@ -19,39 +19,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Questy.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## game
+##[ Name        ]## object
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
-##[ Description ]## Contains the generic form of the Game class
+##[ Description ]## Contains the Object class whose purpose is to be
+                  # drawn onto instances of Place classes (and thereby
+                  # the screen)
 
-from datetime import datetime
-import os
+import pygame
+from pygame.locals import *
 
-class GenericGame:
-    name = ''
-    size = (640, 480)
-    datadir = 'data/'
+class Object:
+    def __init__(self, place, imgfile=None):
+        self.place = place
+        self.surf = None
+        if imgfile is not None:
+            self.load_image(imgfile)
 
-    def __init__(self, stm):
-        self.sys = stm
-
-    def status(self, msg):
-        print '%%% ' + str(datetime.now()) + ' %%%\n' + msg
-
-    def get_data(self, directory):
-        path = os.path.join(self.datadir, directory)
-        paths = {}
-        for root, dirs, files in os.walk(path):
-            name = root[len(path)+1:]
-            if name == '':
-                name = '.'
-            paths[name] = dirs, sorted(files)
-        return path, paths
-
-    def start(self):
+    def load_image(self, filename):
         pass
 
-    def run(self):
-        pass
+    def draw(self, surf=None):
+        if self.surf is None: return
+        if surf is None:
+            surf = self.place.world.screen
+        surf.blit(self.surf, (0, 0))
+        for obj in self.objects:
+            obj.draw()
 
-    def end(self):
-        pass

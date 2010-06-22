@@ -28,11 +28,19 @@ from datetime import datetime
 import questylib.various as various
 
 class SignalDict(dict):
-    def add(self, signal, func):
+    def add(self, signal, *func_and_args):
         try:
-            self.__getitem__(signal).append(func)
+            self.__getitem__(signal).append(func_and_args)
         except Exception:
-            self.__setitem__(signal, [func])
+            self.__setitem__(signal, [func_and_args])
+
+    def run(self, signal):
+        try:
+            for func in self.__getitem__(signal):
+                func[0](*func[1:])
+        except Exception:
+            pass
+
 
 class System:
     def __init__(self, etc, error=None):
@@ -42,6 +50,7 @@ class System:
         else:
             self.error = error
         self.signalactions = SignalDict()
+        self.keyactions = SignalDict()
 
         self.debugargs = self.etc.debugarguments
         if self.etc.debug is not None:
@@ -50,12 +59,7 @@ class System:
         self.emit_signal('systeminit')
 
     def emit_signal(self, signalname):
-        if signalname in self.signalactions:
-            for func in self.signalactions[signalname]:
-                try:
-                    func(self)
-                except Exception:
-                    func()
+        self.signalactions.run(signalname)
 
     def status(self, msg):
         print '### ' + str(datetime.now()) + ' ###\n' + msg

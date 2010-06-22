@@ -106,9 +106,5 @@ del options.debugfile
 del options.debugstring
 
 qs = System(options, parser.error)
-try:
-    qs.start()
-except (KeyboardInterrupt, EOFError):
-    print # A newline
-finally:
-    qs.end()
+qs.start()
+qs.end()
