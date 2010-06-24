@@ -35,12 +35,18 @@ class Frame:
         self.width = img.get_width()
         self.height = img.get_height()
 
+class EmptyCharacter:
+    def walk(self, event):
+        pass
+
 class Character:
     def __init__(self, world, idname, datafiles, **oargs):
         self.id = idname
+        self.name = None
         self.world = world
         self.data = datafiles
         self.frames = {}
+        self.walking = False
         self.step = 0
         def get(key, default):
             try: return oargs[key]
@@ -70,8 +76,14 @@ class Character:
     def next_step(self):
         self.step = (self.step + 1) % len(self.frames[self.direction])
 
+    def walk(self, event):
+        print event.type
+
     def draw(self, surf=None, pos=None):
-        img = self.frames[self.direction][self.step]
+        if self.walking:
+            img = self.frames[self.direction][self.step]
+        else:
+            img = self.frames[self.direction][0]
         if surf is None:
             surf = self.world.screen
         if pos is None:

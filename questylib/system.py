@@ -21,11 +21,12 @@
 
 ##[ Name        ]## system
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
-##[ Description ]## Controls all major aspects of the engine
+##[ Description ]## Controls the general aspects of the engine
 
 import os
 from datetime import datetime
 import questylib.various as various
+from questylib.statusprinter import StatusPrinter
 
 class SignalDict(dict):
     def add(self, signal, *func_and_args):
@@ -34,10 +35,21 @@ class SignalDict(dict):
         except Exception:
             self.__setitem__(signal, [func_and_args])
 
-    def run(self, signal):
+    def remove(self, signal, func):
+        d = self.__getitem__(signal)
+        for x in d:
+            if x[0] == func:
+                d.remove(x)
+                break
+
+    def run(self, *signal_and_args):
+        signal = signal_and_args[0]
+        args = signal_and_args[1:]
         try:
             for func in self.__getitem__(signal):
-                func[0](*func[1:])
+                targs = list(args)
+                targs.extend(func[1:])
+                func[0](*targs)
         except Exception:
             pass
 
@@ -50,34 +62,40 @@ class System:
         else:
             self.error = error
         self.signalactions = SignalDict()
-        self.keyactions = SignalDict()
+        self.gameactions = SignalDict()
+
+        self.status = StatusPrinter('SYSTEM', self.etc, 'white', 'red')
 
         self.debugargs = self.etc.debugarguments
         if self.etc.debug is not None:
+            action = self.signalactions.add
             exec(self.etc.debug)
 
-        self.emit_signal('systeminit')
+        self.emit_signal('aftersysteminit', self)
 
-    def emit_signal(self, signalname):
-        self.signalactions.run(signalname)
+    def emit_signal(self, *signal_and_args):
+            self.signalactions.run(*signal_and_args)
 
-    def status(self, msg):
-        print '### ' + str(datetime.now()) + ' ###\n' + msg
+    def emit_event(self, *event_and_type):
+        self.gameactions.run(*event_and_type)
 
     def start(self):
+        self.emit_signal('beforesystemstart', self)
         self.status('Starting system...')
-        self.emit_signal('systemstart')
         fgame = __import__(self.etc.game + '.game', globals(), locals(),
                            ['Game'], -1)
         os.chdir(os.path.dirname(fgame.__file__))
         self.game = fgame.Game(self)
         self.status('Name of game is: %s' % self.game.name)
+        self.emit_signal('aftersystemstart', self)
         self.status('Starting game...')
-        self.emit_signal('gamestart')
         self.game.start()
         self.status('Running game...')
-        self.emit_signal('gamerun')
         self.game.run()
 
     def end(self):
+        self.emit_signal('beforesystemend', self)
+        self.status('Stopping system...')
+        self.status('Stopping game...')
         self.game.end()
+        self.emit_signal('aftersystemend', self)

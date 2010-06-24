@@ -29,8 +29,9 @@ import pygame
 from pygame.locals import *
 
 class Object:
-    def __init__(self, place, imgfile=None):
-        self.place = place
+    def __init__(self, world, otype=0, imgfile=None):
+        self.world = world
+        self.type = otype
         self.surf = None
         if imgfile is not None:
             self.load_image(imgfile)
@@ -41,7 +42,7 @@ class Object:
     def draw(self, surf=None):
         if self.surf is None: return
         if surf is None:
-            surf = self.place.world.screen
+            surf = self.world.screen
         surf.blit(self.surf, (0, 0))
         for obj in self.objects:
             obj.draw()

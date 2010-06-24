@@ -27,8 +27,9 @@
 from datetime import datetime
 import pygame
 from pygame.locals import *
-from questylib.character import Character
+from questylib.character import Character, EmptyCharacter
 from questylib.place import Place
+from questylib.statusprinter import StatusPrinter
 
 microseconds = lambda tdelta: tdelta.microseconds
 class TimeCounter:
@@ -51,15 +52,24 @@ class World:
         self.sys = stm
         self.size = size
         self.characters = []
+        self.leading_character = EmptyCharacter()
         self.counters = []
         self.places = []
         self.current_place = None
         self.running = False
-
-    def status(self, msg):
-        print '$$$ ' + str(datetime.now()) + ' $$$\n' + msg
+        self.quitting = False
+        self.status = StatusPrinter('WORLD', self.sys.etc, 'magenta', 'cyan')
+        self.link_event = self.sys.gameactions.add
+        self.sys.emit_signal('afterworldinit', self)
 
     def start(self):
+        self.sys.emit_signal('beforeworldstart', self)
+        self.status('Starting up...')
+
+        self.link_event(QUIT, self.quit)
+        self.link_event(KEYDOWN, self.lead_walk)
+        self.link_event(KEYUP, self.lead_walk)
+
         pygame.init()
         if self.sys.etc.fullscreen:
             try:
@@ -76,32 +86,44 @@ class World:
         self.screen.blit(self.bgsurface, (0, 0))
 
         self.innerclock = pygame.time.Clock()
-        self.sys.emit_signal('worldstart')
+        self.sys.emit_signal('afterworldstart', self)
 
     def create_character(self, idname, datafiles):
+        self.sys.emit_signal('beforecharactercreate', idname, self)
         char = Character(self, idname, datafiles)
         char.create()
+        self.sys.emit_signal('aftercharactercreate', char)
         return char
 
     def add_character(self, char):
+        self.sys.emit_signal('beforecharacteradd', char)
         self.characters.append(char)
         counter = TimeCounter(char, char.next_step)
         self.counters.append(counter)
         if self.running:
             counter.start()
+        self.sys.emit_signal('aftercharacteradd', char)
+
+    def set_leading_character(self, char):
+        self.leading_character = char
+
+    def lead_walk(self, event):
+        self.leading_character.walk(event)
 
     def remove_character(self, char):
-        try:
-            self.characters.remove(char)
-            self.remove_counter(char)
-            return True
-        except Exception:
+        if 'id' not in dir(char):
+            char = None
             for t in self.characters:
                 if t.id == char:
-                    self.characters.remove(t)
-                    self.remove_counter(t)
-                    return True
-            return False
+                    char = t
+            if char is None:
+                return False
+
+        self.sys.emit_signal('beforecharacterremove', char)
+        self.characters.remove(char)
+        self.remove_counter(char)
+        self.sys.emit_signal('aftercharacterremove', char)
+        return True
 
     def remove_counter(self, obj):
         try:
@@ -115,24 +137,28 @@ class World:
             return False
 
     def create_place(self, *args):
+        self.sys.emit_signal('beforeplacecreate', self)
         args = list(args)
         args.insert(0, self)
         place = Place(*args)
+        self.sys.emit_signal('afterplacecreate', place)
         return place
 
     def add_place(self, place):
+        self.sys.emit_signal('beforeplaceadd', place)
         self.places.append(place)
+        self.sys.emit_signal('afterplaceadd', place)
 
     def set_place(self, place):
         if 'draw' in dir(place):
             self.current_place = place
             return True
         else:
-            for t in self.places:
-                if t.id == place:
-                    self.current_place = t
-                    return True
-            return False
+            try:
+                self.current_place = self.places[place]
+                return True
+            except Exception:
+                return False
 
     def get_center(self):
         return [x / 2 for x in self.size]
@@ -145,24 +171,29 @@ class World:
         pygame.display.flip()
 
     def run(self):
+        self.sys.emit_signal('beforeworldrun', self)
+        self.status('Running...')
         self.running = True
-        done = False
+
         for c in self.counters:
             c.start()
 
-        self.draw()
-        while not done:
+        while not self.quitting:
             self.innerclock.tick(30)
+            self.draw()
 
             for event in pygame.event.get():
-                if event.type == QUIT:
-                    done = True
-                elif event.type == KEYDOWN:
-                    if event.key == K_ESCAPE:
-                        done = True
+                self.sys.emit_event(event.type, event)
 
-        for c in self.counters:
-            c.think()
+            for c in self.counters:
+                c.think()
+
+        self.sys.emit_signal('afterworldrun', self)
+
+    def quit(self, event):
+        self.quitting = True
 
     def end(self):
-        pass
+        self.sys.emit_signal('beforeworldend', self)
+        self.status('Stopping...')
+        self.sys.emit_signal('afterworldend', self)

@@ -19,53 +19,28 @@
 # You should have received a copy of the GNU General Public License
 # along with Questy.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## place
+##[ Name        ]## dialog
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
-##[ Description ]## Contains the generic form of the Place class
+##[ Description ]## Contains the Dialog class whose purpose is to
+                  # contain text and menus and to be drawn onto the
+                  # screen
 
 import pygame
 from pygame.locals import *
-from questylib.bitmap import BitMap
 
-class Place:
-    def __init__(self, world, imgfile=None, posfile=None):
+class Dialog:
+    def __init__(self, world, data=None):
         self.world = world
-        self.name = None
-        self.objects = []
-        if imgfile is not None:
-            self.surf = self.load_imgfile(imgfile)
-        else:
-            self.surf = None
 
-        if posfile is not None:
-            self.posoks = self.load_posfile(posfile)
-        else:
-            self.posoks = None
+        self.surf = None
+        if data is not None:
+            self.use_data(data)
 
-    def char_size(self, pos):
-        return 1
-
-    def char_pos(self, pos):
-        return pos
-
-    def pos_ok(self, pos):
-        if self.posoks is None:
-            return True
-        else:
-            return self.posoks.get(*pos)
-
-    def load_imgfile(self, filename):
-        return pygame.image.load(filename).convert()
-
-    def load_posfile(self, filename):
-        bm = BitMap(*self.world.size)
-        bm.load(filename)
-        return bm
+    def use_data(self, data):
+        pass
 
     def draw(self, surf=None):
+        if self.surf is None: return
         if surf is None:
             surf = self.world.screen
         surf.blit(self.surf, (0, 0))
-        for obj in self.objects:
-            obj.draw()
-

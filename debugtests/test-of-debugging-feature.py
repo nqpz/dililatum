@@ -1,8 +1,12 @@
-def extra1():
-    print 'AHA!'
-
-def extra2(stm):
+def extra1(stm):
     print stm.debugargs
 
-self.signalactions.add('systemstart', extra1)
-self.signalactions.add('gamestart', extra2, self)
+def extra2(stm):
+
+
+def extra3(char, verb):
+    print char.id + ' ' + verb + ' the name..'
+
+action('beforesystemstart', extra1)
+action('beforegamestart', extra2)
+action('beforecharacteradd', extra3, 'is')

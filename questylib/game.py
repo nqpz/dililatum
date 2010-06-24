@@ -25,17 +25,19 @@
 
 from datetime import datetime
 import os
+from questylib.statusprinter import StatusPrinter
 
 class GenericGame:
-    name = ''
+    name = 'A game'
+    shortname = 'game'
     size = (640, 480)
     datadir = 'data/'
 
     def __init__(self, stm):
         self.sys = stm
-
-    def status(self, msg):
-        print '%%% ' + str(datetime.now()) + ' %%%\n' + msg
+        self.status = StatusPrinter(self.shortname.upper(),
+                                    self.sys.etc, 'green', 'grey')
+        self.sys.emit_signal('aftergameinit', self)
 
     def get_data(self, directory):
         path = os.path.join(self.datadir, directory)
@@ -48,10 +50,24 @@ class GenericGame:
         return path, paths
 
     def start(self):
+        self.sys.emit_signal('beforegamestart', self)
+        self.start_game()
+        self.sys.emit_signal('aftergamestart', self)
+
+    def start_game(self):
         pass
 
     def run(self):
+        self.sys.emit_signal('beforegamerun', self)
+        self.run_game()
+        self.sys.emit_signal('aftergamerun', self)
+
+    def run_game(self):
         pass
 
     def end(self):
-        pass
+        self.sys.emit_signal('beforegameend', self)
+        try: self.world.end()
+        except Exception: pass
+        self.sys.emit_signal('aftergameend', self)
+

@@ -44,26 +44,7 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.\
 ''',
-    epilog='''\
-This is merely an interpreter. It is not an actual game -- it\'s a
-game engine.
-
-About debugging:
-  Questy is a program never intended to be finished. Its built-in
-  debugging features aid in the opposite.
-  When debugging, you can add arguments from the command line. This is
-  particularly useful when using a debug file. If both a debug file
-  and a debug string is present, the string is prepended to the file
-  contents.
-  Debug code can be executed at different times using different
-  signals that the Questy system emits.
-
-  Examples:\
-    Debug a game with a-debug-file.py
-      $ questy -d a-debug-file.py A_GAME
-    Do the same, but this time send 3 arguments to a-debug-file.py
-      $ questy -d a-debug-file.py -a arg1 -a arg2 -a arg3 A_GAME
-''')
+    epilog='This is merely an interpreter. It is not an actual game -- it\'s a game engine.')
 
 parser.add_option('-f', '--fullscreen', dest='fullscreen',
                   action='store_true', help='play in fullscreen mode')
@@ -74,6 +55,12 @@ parser.add_option('-d', '--debug-with-file', dest='debugfile',
 parser.add_option('-D', '--debug-with-string', dest='debugstring',
                   metavar='CODE',
                   help='debug Questy using a string of Python code')
+parser.add_option('-q', '--quiet', dest='verbose',
+                  action='store_false', default=True,
+                  help='don\'t print status messages')
+parser.add_option('-C', '--nocolorprint', dest='colorprint',
+                  action='store_false', default=True,
+                  help='don\'t attempt to color status messages in the terminal')
 parser.add_option('-a', '--add-debug-argument', dest='debugarguments',
                   default=[], action='append', metavar='STRING',
                   help='add an argument to interact with your debug code')
@@ -108,3 +95,12 @@ del options.debugstring
 qs = System(options, parser.error)
 qs.start()
 qs.end()
+
+# try:
+#     qs.start()
+# except (KeyboardInterrupt, EOFError):
+#     print
+# except Exception, error:
+#     parser.error(str(error))
+# finally:
+#     qs.end()
