@@ -43,12 +43,17 @@ class Place:
             self.posoks = None
 
     def char_size(self, pos):
-        return 1
+        return 1.0
 
     def char_pos(self, pos):
         return pos
 
-    def pos_ok(self, pos):
+    def pos_ok(self, pos, size, screen_limits=True):
+        if screen_limits and \
+                pos[0] < 0 or pos[0] + size[0] > self.world.size[0] \
+                or pos[1] - size[1] < 0 or pos[1] > self.world.size[1]:
+            return False
+
         if self.posoks is None:
             return True
         else:
@@ -64,7 +69,7 @@ class Place:
 
     def draw(self, surf=None):
         if surf is None:
-            surf = self.world.screen
+            surf = self.world
         surf.blit(self.surf, (0, 0))
         for obj in self.objects:
             obj.draw()

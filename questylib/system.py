@@ -25,6 +25,7 @@
 
 import os
 from datetime import datetime
+from pygame.locals import MOUSEMOTION, MOUSEBUTTONUP, MOUSEBUTTONDOWN
 import questylib.various as various
 from questylib.statusprinter import StatusPrinter
 
@@ -32,7 +33,7 @@ class SignalDict(dict):
     def add(self, signal, *func_and_args):
         try:
             self.__getitem__(signal).append(func_and_args)
-        except Exception:
+        except KeyError:
             self.__setitem__(signal, [func_and_args])
 
     def remove(self, signal, func):
@@ -50,7 +51,7 @@ class SignalDict(dict):
                 targs = list(args)
                 targs.extend(func[1:])
                 func[0](*targs)
-        except Exception:
+        except KeyError:
             pass
 
 
@@ -65,6 +66,10 @@ class System:
         self.gameactions = SignalDict()
 
         self.status = StatusPrinter('SYSTEM', self.etc, 'white', 'red')
+        self.status('''\
+Questy is free software: you are free to change and redistribute it
+under the terms of the GNU GPL, version 3 or any later version.
+There is NO WARRANTY, to the extent permitted by law.''')
 
         self.debugargs = self.etc.debugarguments
         if self.etc.debug is not None:
@@ -77,6 +82,11 @@ class System:
             self.signalactions.run(*signal_and_args)
 
     def emit_event(self, *event_and_type):
+        if self.etc.zoom != 1 and \
+                event_and_type[0] in (MOUSEMOTION, MOUSEBUTTONUP,
+                                      MOUSEBUTTONDOWN):
+            event_and_type = list(event_and_type)
+            event_and_type[1] = [x / self.etc.zoom for x in event_and_type[1].pos]
         self.gameactions.run(*event_and_type)
 
     def start(self):
@@ -86,7 +96,9 @@ class System:
                            ['Game'], -1)
         os.chdir(os.path.dirname(fgame.__file__))
         self.game = fgame.Game(self)
-        self.status('Name of game is: %s' % self.game.name)
+        self.status(
+            'Name of game is: %s' % self.game.name + '\n' +
+            'Size of game is: %dx%d' % tuple(self.game.size))
         self.emit_signal('aftersystemstart', self)
         self.status('Starting game...')
         self.game.start()
@@ -95,7 +107,6 @@ class System:
 
     def end(self):
         self.emit_signal('beforesystemend', self)
-        self.status('Stopping system...')
         self.status('Stopping game...')
         self.game.end()
         self.emit_signal('aftersystemend', self)

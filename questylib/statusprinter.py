@@ -55,13 +55,18 @@ class StatusPrinter:
         self.outfile = outfile
         self.header = '####' + name[:10] + \
             atleast(0, 10 - len(name) + 4) * '#' + '%s####'
+        self.simpleheader = name + ':%s:'
 
     def __call__(self, msg):
-        msg = self.header % datetime.now() + '\n' + msg + '\n'
-        if self.etc.verbose:
-            if self.etc.colorprint:
-                self.outfile.write(withcolor(msg, self.fgcolor,
-                                             self.bgcolor))
-            else:
-                self.outfile.write(msg + '\n')
+        if self.etc.simpleprint:
+            msg = self.simpleheader % datetime.now() + '\n' + msg + '\n'
+            self.outfile.write(msg)
+        else:
+            msg = self.header % datetime.now() + '\n' + msg + '\n'
+            if self.etc.verbose:
+                if self.etc.colorprint:
+                    self.outfile.write(withcolor(msg, self.fgcolor,
+                                                 self.bgcolor))
+                else:
+                    self.outfile.write(msg + '\n')
 

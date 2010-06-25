@@ -47,19 +47,46 @@ class TimeCounter:
             self.func()
             self.reset()
 
+class Duration:
+    def __init__(self, dur):
+        self.duration = dur * 1000
+
 class World:
-    def __init__(self, stm, size):
+    default_character_moving_keys = dict(
+        cb=[K_DOWN],
+        ct=[K_UP],
+        lm=[K_LEFT],
+        rm=[K_RIGHT],
+        lb=[K_LEFT, K_DOWN],
+        rt=[K_RIGHT, K_UP],
+        lt=[K_LEFT, K_UP],
+        rb=[K_RIGHT, K_DOWN]
+    )
+
+    def __init__(self, stm, size, **oargs):
+        def get(key, default):
+            try: return oargs[key]
+            except KeyError: return default
         self.sys = stm
         self.size = size
+        self.real_size = tuple(self.size)
+        self.objects = []
         self.characters = []
         self.leading_character = EmptyCharacter()
+        self.leading_character_direction = None
+        self.character_moving_keys = get('charkeys',
+                                         self.default_character_moving_keys)
+        self.walking_speed = get('walkspeed', Duration(100))
         self.counters = []
         self.places = []
         self.current_place = None
         self.running = False
         self.quitting = False
-        self.status = StatusPrinter('WORLD', self.sys.etc, 'magenta', 'cyan')
+        self.status = StatusPrinter('WORLD', self.sys.etc, 'cyan', 'blue')
         self.link_event = self.sys.gameactions.add
+        self.keys_down = []
+        self.screen_offset = [0, 0]
+        self.screen_bars = [None, None]
         self.sys.emit_signal('afterworldinit', self)
 
     def start(self):
@@ -67,26 +94,119 @@ class World:
         self.status('Starting up...')
 
         self.link_event(QUIT, self.quit)
+        self.link_event(KEYDOWN, self.key_quit)
         self.link_event(KEYDOWN, self.lead_walk)
         self.link_event(KEYUP, self.lead_walk)
 
-        pygame.init()
-        if self.sys.etc.fullscreen:
-            try:
-                self.screen = pygame.display.set_mode(
-                    self.size, FULLSCREEN, DOUBLEBUF, HWSURFACE)
-            except Exception:
-                self.screen = pygame.display.set_mode(
-                    self.size, FULLSCREEN)
-        else:
-            self.screen = pygame.display.set_mode(self.size)
+        self.counters.append(TimeCounter(self.walking_speed, self.check_lead_walk))
 
-        self.bgsurface = pygame.Surface(self.size).convert()
-        self.bgsurface.fill((0, 0, 0))
-        self.screen.blit(self.bgsurface, (0, 0))
+        pygame.init()
+        self.create_screen()
+        self.fill_background((0, 0, 0))
+        self.set_caption(self.sys.game.name)
 
         self.innerclock = pygame.time.Clock()
         self.sys.emit_signal('afterworldstart', self)
+
+    def create_screen(self):
+        self.screen_bars = [None, None]
+        etc = self.sys.etc
+        if etc.fullscreen:
+            flags = FULLSCREEN
+            if etc.hwaccel:
+                flags = flags | HWSURFACE
+            if etc.doublebuf:
+                flags = flags | DOUBLEBUF
+            self.screen = pygame.display.set_mode(self.size, flags)
+        elif etc.fakefullscreen or etc.size is not None:
+            barsize = None
+            if etc.fakefullscreen or (etc.size is not None and etc.size[0] is None and etc.size[1] is None):
+                try:
+                    info = pygame.display.Info()
+                    size = info.current_w, info.current_h
+                    if size[0] == -1: # in this case, size[1] will also be -1
+                        self.sys.error('your SDL is too old for width and height detection', False)
+                except Exception:
+                    self.sys.error('your PyGame is too old for width and height detection', False)
+            else:
+                size = list(etc.size)
+            if size[0] is None:
+                self.sys.etc.zoom = size[1] / float(self.size[1])
+                size[0] = int(self.size[0] * etc.zoom)
+            elif size[1] is None:
+                self.sys.etc.zoom = size[0] / float(self.size[0])
+                size[1] = int(self.size[1] * etc.zoom)
+            else:
+                scales = [size[i] / float(self.size[i]) for i in range(2)]
+                if scales[0] < scales[1]: a = 0; b = 1
+                else:                     a = 1; b = 0
+
+                self.sys.etc.zoom = scales[a]
+                self.screen_offset[b] = int((size[b] - self.size[b] * etc.zoom) / 2)
+                barsize = [0, 0]
+                barsize[a] = size[a]
+                barsize[b] = self.screen_offset[b]
+            self.real_size = size
+            self.status('Modified size of game is: %dx%d' % tuple(self.real_size))
+            flags = None
+            if not etc.border or etc.fakefullscreen:
+                flags = NOFRAME
+            if etc.doublebuf:
+                if flags is not None:
+                    flags = flags | DOUBLEBUF
+                else:
+                    flags = DOUBLEBUF
+            try:
+                self.screen = pygame.display.set_mode(self.real_size, flags)
+            except pygame.error:
+                if not etc.border or etc.fakefullscreen:
+                    flags = NOFRAME
+                else:
+                    flags = 0
+                self.screen = pygame.display.set_mode(self.real_size, flags)
+            if barsize is not None:
+                self.screen_bars[b] = pygame.Surface(barsize).convert()
+        else:
+            if etc.zoom != 1:
+                self.real_size = [int(x * etc.zoom) for x in self.size]
+                self.status('Scaled size of game is: %dx%d' % tuple(self.real_size))
+            flags = None
+            if not etc.border or etc.fakefullscreen:
+                flags = NOFRAME
+            if etc.doublebuf:
+                if flags is not None:
+                    flags = flags | DOUBLEBUF
+                else:
+                    flags = DOUBLEBUF
+            try:
+                self.screen = pygame.display.set_mode(self.real_size, flags)
+            except pygame.error:
+                if not etc.border or etc.fakefullscreen:
+                    flags = NOFRAME
+                else:
+                    flags = 0
+                self.screen = pygame.display.set_mode(self.real_size, flags)
+
+        self.bgsurface = pygame.Surface(self.real_size).convert()
+
+    def fill_background(self, color):
+        self.bgsurface.fill(color)
+        for x in self.screen_bars:
+            if x is not None:
+                x.fill(color)
+
+    def set_caption(self, caption):
+        pygame.display.set_caption(caption)
+
+    def set_icon(self, surf):
+        pygame.display.set_icon(surf)
+
+    def load_icon(self, path):
+        self.set_icon(pygame.image.load(path).convert_alpha())
+
+    def blit(self, surf, pos):
+        surf = pygame.transform.smoothscale(surf, [int(x * self.sys.etc.zoom) for x in surf.get_size()])
+        self.screen.blit(surf, [self.screen_offset[i] + pos[i] * self.sys.etc.zoom for i in range(2)])
 
     def create_character(self, idname, datafiles):
         self.sys.emit_signal('beforecharactercreate', idname, self)
@@ -107,8 +227,63 @@ class World:
     def set_leading_character(self, char):
         self.leading_character = char
 
+    def check_lead_walk(self):
+        if self.leading_character_direction is None:
+            self.leading_character.stop()
+        else:
+            self.leading_character.walk(self.leading_character_direction)
+
     def lead_walk(self, event):
-        self.leading_character.walk(event)
+        if event.type == KEYDOWN:
+            self.keys_down.append(event.key)
+        elif event.type == KEYUP:
+            try:
+                self.keys_down.remove(event.key)
+            except ValueError:
+                pass
+
+        self.leading_character_direction = \
+            self.get_value_of_key_dict(self.character_moving_keys)
+
+    def get_value_of_key_dict(self, keydict):
+        result = None
+        result_key_numbers = None
+        result_points = None
+        for value, keys in keydict.items():
+            p = []
+            tp = 0
+            tn = 0
+            ok = True
+            for k in keys:
+                i = 0
+                ok = False
+                for d in self.keys_down:
+                    if k == d:
+                        tp += i
+                        tn += 1
+                        ok = True
+                        break
+                    i += 1
+                if not ok:
+                    break
+            if ok:
+                if result_key_numbers is not None:
+                    tngo = tn > result_key_numbers
+                    tn2go = tn == result_key_numbers
+                else:
+                    tngo = True
+                if not tngo:
+                    if result_points is not None:
+                        tpgo = tp < result_points
+                    else:
+                        tpgo = True
+
+                if tngo or (tn2go and tpgo):
+                    result = value
+                    result_points = tp
+                    result_key_numbers = tn
+
+        return result
 
     def remove_character(self, char):
         if 'id' not in dir(char):
@@ -157,7 +332,7 @@ class World:
             try:
                 self.current_place = self.places[place]
                 return True
-            except Exception:
+            except IndexError:
                 return False
 
     def get_center(self):
@@ -168,6 +343,18 @@ class World:
         self.current_place.draw()
         for char in self.characters:
             char.draw()
+
+        if self.screen_bars[0] is not None:
+            self.screen.blit(self.screen_bars[0], (0, 0))
+            self.screen.blit(self.screen_bars[0],
+                             (self.real_size[0] -
+                              self.screen_bars[0].get_size()[0], 0))
+        if self.screen_bars[1] is not None:
+            self.screen.blit(self.screen_bars[1], (0, 0))
+            self.screen.blit(self.screen_bars[1],
+                             (0, self.real_size[1] -
+                              self.screen_bars[1].get_size()[1]))
+
         pygame.display.flip()
 
     def run(self):
@@ -180,7 +367,7 @@ class World:
 
         while not self.quitting:
             self.innerclock.tick(30)
-            self.draw()
+            self.sys.emit_signal('beforegameloop', self)
 
             for event in pygame.event.get():
                 self.sys.emit_event(event.type, event)
@@ -188,10 +375,17 @@ class World:
             for c in self.counters:
                 c.think()
 
+            self.draw()
+            self.sys.emit_signal('aftergameloop', self)
+
         self.sys.emit_signal('afterworldrun', self)
 
     def quit(self, event):
         self.quitting = True
+
+    def key_quit(self, event):
+        if event.key == K_ESCAPE:
+            self.quit(event)
 
     def end(self):
         self.sys.emit_signal('beforeworldend', self)
