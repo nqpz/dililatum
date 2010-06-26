@@ -28,6 +28,7 @@ from datetime import datetime
 import pygame
 from pygame.locals import *
 from questylib.character import Character, EmptyCharacter
+from questylib.object import Object
 from questylib.place import Place
 from questylib.statusprinter import StatusPrinter
 
@@ -94,7 +95,7 @@ class World:
         self.status('Starting up...')
 
         self.link_event(QUIT, self.quit)
-        self.link_event(KEYDOWN, self.key_quit)
+        self.link_event(KEYDOWN, self.key_builtin)
         self.link_event(KEYDOWN, self.lead_walk)
         self.link_event(KEYUP, self.lead_walk)
 
@@ -311,6 +312,14 @@ class World:
                     return True
             return False
 
+    def create_object(self, *args, **oargs):
+        self.sys.emit_signal('beforeobjectcreate', self)
+        args = list(args)
+        args.insert(0, self)
+        obj = Object(*args, **oargs)
+        self.sys.emit_signal('afterobjectcreate', obj)
+        return obj
+
     def create_place(self, *args):
         self.sys.emit_signal('beforeplacecreate', self)
         args = list(args)
@@ -324,16 +333,23 @@ class World:
         self.places.append(place)
         self.sys.emit_signal('afterplaceadd', place)
 
-    def set_place(self, place):
+    def set_place(self, place, npos=None, direction=None):
         if 'draw' in dir(place):
             self.current_place = place
-            return True
         else:
             try:
                 self.current_place = self.places[place]
-                return True
             except IndexError:
-                return False
+                pass
+        if npos is None:
+            npos = self.leading_character.default_position
+        self.leading_character.original_position = npos
+        self.leading_character.position = npos[:]
+        self.leading_character.modified_position = npos[:]
+        if direction is not None:
+            self.leading_character.direction = direction
+            self.leading_character_direction = direction
+        self.leading_character.stop()
 
     def get_center(self):
         return [x / 2 for x in self.size]
@@ -383,7 +399,9 @@ class World:
     def quit(self, event):
         self.quitting = True
 
-    def key_quit(self, event):
+    def key_builtin(self, event):
+        if event.key == K_SCROLLOCK:
+            self.leading_character.reset_position()
         if event.key == K_ESCAPE:
             self.quit(event)
 

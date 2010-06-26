@@ -29,7 +29,7 @@ import sys
 def read_file(filename, throw_exceptions=False):
     if not throw_exceptions:
         try:
-            f = open(filename)
+            f = open(filename, 'U')
             return f.read()
         except Exception:
             return ''

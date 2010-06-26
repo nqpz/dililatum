@@ -64,6 +64,6 @@ class BitMap:
         except IndexError:
             return
         tmp = 1;
-        for i in range(y % 8):
+        for i in range(int(y % 8)):
             tmp *= 2
         return (p / tmp) % 2 == 1

@@ -67,9 +67,12 @@ class Character:
                 lt=(-2.12, -2.12),
                 rb=(2.12, 2.12)
         ))
-        self.position = get('position', (
-                self.world.size[0] / 2,
-                self.world.size[1] * 0.9))
+        self.default_position = (
+            self.world.size[0] / 2,
+            self.world.size[1] * 0.9)
+        self.position = get('position', self.default_position[:])
+        self.original_position = self.position[:]
+        self.modified_position = self.position[:]
         self.visible = True
 
     def convert_files_to_surfaces(self, *files):
@@ -120,47 +123,61 @@ class Character:
             or (a == 'rb' and b == 'lt')
 
     def walk(self, direction, screen_limits=True, scale=1.0):
-        w, h, resize = self.get_size(self.position)
+        w, h, resize = self.get_size(self.modified_position)
         size = w, h
         mov = self.movement[direction]
-        pos = self.world.current_place.char_pos(self.position)
+        pos = self.position
         pos_ok = False
         origscale = scale
 
         while not pos_ok:
             npos = [int(pos[i] + mov[i] * resize * scale *
                         self.world.size[i] / 100.0) for i in range(2)]
-            pos_ok = self.world.current_place.pos_ok(npos, size, screen_limits)
+            mnpos = self.world.current_place.char_pos(npos)
+            pos_ok = self.world.current_place.pos_ok(mnpos, size,
+                                                     screen_limits)
             scale -= .1
             if scale < 0.5:
                 break
         if pos_ok:
-            self.direction = direction
-            self.position = npos
-            self.walking = True
+            conti = True
+            for o in self.world.current_place.objects:
+                t = o.check_if_action_needed(npos, size)
+                if t: conti = False
+            if conti:
+                self.direction = direction
+                self.position = npos
+                self.modified_position = mnpos
+                self.walking = True
         else:
             self.stop()
 
             # Double checking -- character frames are not necessarily
             # of the same dimensions
-            f = self.get_frame()
-            fw = f.width
-            fh = f.height
 
-            if self.position[0] + fw  >= self.world.size[0]:
-                self.position[0] = self.world.size[0] - 1 - fw
+            if self.position[0] + w  >= self.world.size[0]:
+                self.position[0] = self.world.size[0] - 1 - w
             if self.position[0] < 0:
                 self.position[0] = 0
 
             if self.position[1] >= self.world.size[1]:
                 self.position[1] = self.world.size[1] - 1
-            if self.position[1] - fh < 0:
+            if self.position[1] + h < 0:
                 self.position[1] = 0
+
+    def reset_position(self):
+        self.position = self.original_position[:]
+
+    def hide(self):
+        self.visible = False
+
+    def show(self):
+        self.visible = True
 
     def draw(self, surf=None):
         if not self.visible: return False
         img = self.get_frame()
-        pos = self.world.current_place.char_pos(self.position)
+        pos = self.modified_position
         w, h, r = self.get_size(pos, img)
         img = pygame.transform.smoothscale(img.surf, (w, h))
         if surf is None:

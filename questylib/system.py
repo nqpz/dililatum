@@ -69,7 +69,8 @@ class System:
         self.status('''\
 Questy is free software: you are free to change and redistribute it
 under the terms of the GNU GPL, version 3 or any later version.
-There is NO WARRANTY, to the extent permitted by law.''')
+There is NO WARRANTY, to the extent permitted by law.
+See <http://metanohi.org/projects/questy/> for downloads and documentation.''')
 
         self.debugargs = self.etc.debugarguments
         if self.etc.debug is not None:

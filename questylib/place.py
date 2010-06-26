@@ -28,25 +28,42 @@ from pygame.locals import *
 from questylib.bitmap import BitMap
 
 class Place:
-    def __init__(self, world, imgfile=None, posfile=None):
+    def __init__(self, world, imgfile=None, posfile=None, power=None):
         self.world = world
         self.name = None
         self.objects = []
+        self.dir_objects = {}
         if imgfile is not None:
             self.surf = self.load_imgfile(imgfile)
         else:
             self.surf = None
+        self.power = power
 
         if posfile is not None:
             self.posoks = self.load_posfile(posfile)
         else:
             self.posoks = None
 
+    def add_object(self, obj):
+        self.objects.append(obj)
+
+    def set_direction_object(self, direction, obj):
+        self.dir_objects[direction] = obj
+
     def char_size(self, pos):
-        return 1.0
+        if self.power is None:
+            return 1.0
+        else:
+            return (float(pos[1]) / self.world.size[1]) ** self.power
 
     def char_pos(self, pos):
         return pos
+
+    def set_char_size(self, cls):
+        self.char_size = cls(self.world)
+
+    def set_char_pos(self, cls):
+        self.char_pos = cls(self.world)
 
     def pos_ok(self, pos, size, screen_limits=True):
         if screen_limits and \
@@ -57,7 +74,8 @@ class Place:
         if self.posoks is None:
             return True
         else:
-            return self.posoks.get(*pos)
+            return self.posoks.get(*pos) and \
+                self.posoks.get(pos[0] + size[0], pos[1])
 
     def load_imgfile(self, filename):
         return pygame.image.load(filename).convert()
