@@ -101,7 +101,10 @@ class GenericGame:
             sinfo = {}
             for y in t[1:]:
                 if y == '': continue
-                direction = dirs[y[0]]
+                try:
+                    direction = dirs[y[0]]
+                except KeyError:
+                    direction = y[0]
                 tdet = y[1:].split('|')
                 target = int(tdet[0])
                 tdett = tdet[1].split(' ')

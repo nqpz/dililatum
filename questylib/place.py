@@ -50,6 +50,9 @@ class Place:
     def set_direction_object(self, direction, obj):
         self.dir_objects[direction] = obj
 
+    def remove_object(self, obj):
+        self.objects.remove(obj)
+
     def char_size(self, pos):
         if self.power is None:
             return 1.0

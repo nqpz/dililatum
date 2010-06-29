@@ -19,26 +19,39 @@
 # You should have received a copy of the GNU General Public License
 # along with Questy.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## mark-os-pos
+##[ Name        ]## convertlinkedplacestootherinternalformat
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
-##[ Description ]## Shows a background for marking where characters
-                  # can safely walk
+##[ Description ]## Converts files created with link-places to the
+                  # simpler internal format used by Questy
 
-from questylib.tools.posmarker import *
+import sys
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
+def convert_from_internal_to_other_internal(path):
+    f = open(path, 'rb')
+    data = pickle.load(f)
+    f.close()
+    out = ''
+
+    return out
+
+###################
 args = sys.argv[1:]
 if len(args) == 1:
     if args[0] == '-H' or args[0] == '--help':
         print """\
-Usage: mark-where-pos-ok [OPTION] IMGFILE POSFILE
-Shows a background for marking where characters can safely walk
+Usage: convertlinkedplacestootherinternalformat FILE
+Converts any linkplaces file to the internal format used by Questy
 
 Options:
   -H, --help        show this help and exit
   -V, --version     show version information and exit
 
-Use the left mouse button to mark, PageUp and PageDown to adjust the
-"brush" size and the right mouse button to unmark."""
+Converted content is written to standard out.\
+"""
         sys.exit()
     elif args[0] == '-V' or args[0] == '--version':
         print """\
@@ -50,19 +63,8 @@ There is NO WARRANTY, to the extent permitted by law.\
 """
         sys.exit()
     else:
-        sys.stderr.write('mark-where-pos-ok: error: you didn\'t specify a POSFILE\n')
-        sys.exit(1)
-elif len(args) == 0:
-    sys.stderr.write('mark-where-pos-ok: error: you didn\'t specify any files!\n')
-    sys.exit(1)
+        path = args[0]
 else:
-    imgfile = args[0]
-    posfile = args[1]
+    path = args[1]
 
-pm = OKPositionsMarker(imgfile, posfile)
-try:
-    pm.start()
-except (KeyboardInterrupt, EOFError):
-    print # A newline
-finally:
-    pm.end()
+print convert_from_internal_to_other_internal(path)

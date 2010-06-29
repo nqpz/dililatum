@@ -54,7 +54,8 @@ class Character:
         self.frames = {}
         self.walking = False
         self.step = 0
-        self.direction = get('direction', 'cb')
+        self.original_direction = get('direction', 'cb')
+        self.direction = self.original_direction[:]
         self.position = get('position', world.get_center())
         self.duration = get('duration', 200) * 1000
         self.movement = get('movement', dict(
@@ -70,8 +71,8 @@ class Character:
         self.default_position = (
             self.world.size[0] / 2,
             self.world.size[1] * 0.9)
-        self.position = get('position', self.default_position[:])
-        self.original_position = self.position[:]
+        self.original_position = get('position', self.default_position[:])
+        self.position = self.position[:]
         self.modified_position = self.position[:]
         self.visible = True
 
@@ -167,6 +168,8 @@ class Character:
 
     def reset_position(self):
         self.position = self.original_position[:]
+        self.modified_position = self.original_position[:]
+        self.direction = self.original_direction
 
     def hide(self):
         self.visible = False

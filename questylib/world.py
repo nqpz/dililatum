@@ -347,6 +347,7 @@ class World:
         self.leading_character.position = npos[:]
         self.leading_character.modified_position = npos[:]
         if direction is not None:
+            self.leading_character.original_direction = direction
             self.leading_character.direction = direction
             self.leading_character_direction = direction
         self.leading_character.stop()

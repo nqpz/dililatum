@@ -85,6 +85,7 @@ class OKPositionsMarker:
     def start(self):
         pygame.display.init()
         self.screen = pygame.display.set_mode((640, 480))
+        pygame.display.set_caption('posmarker')
         self.img = pygame.image.load(self.imgfile).convert()
         self.points = NewSurface((640, 480), SRCALPHA)
         self.positions = BitMap(640, 480)
