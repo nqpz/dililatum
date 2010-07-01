@@ -30,6 +30,7 @@ from pygame.locals import *
 from questylib.character import Character, EmptyCharacter
 from questylib.object import Object
 from questylib.place import Place
+from questylib.font import Font
 from questylib.statusprinter import StatusPrinter
 
 microseconds = lambda tdelta: tdelta.microseconds
@@ -205,9 +206,15 @@ class World:
     def load_icon(self, path):
         self.set_icon(pygame.image.load(path).convert_alpha())
 
-    def blit(self, surf, pos):
-        surf = pygame.transform.smoothscale(surf, [int(x * self.sys.etc.zoom) for x in surf.get_size()])
+    def blit(self, surf, pos=(0, 0)):
+        if surf is None: return
+        surf = pygame.transform.smoothscale(
+            surf, [int(x * self.sys.etc.zoom)
+                   for x in surf.get_size()])
         self.screen.blit(surf, [self.screen_offset[i] + pos[i] * self.sys.etc.zoom for i in range(2)])
+
+    def flip(self):
+        pygame.display.flip()
 
     def load_image(self, path, alpha=True):
         img = pygame.image.load(path)
@@ -216,9 +223,8 @@ class World:
         else:
             return img.convert()
 
-    def show_image(self, surf, pos=(0, 0)):
-        self.blit(surf, pos)
-        pygame.display.flip()
+    def create_font(self, **oargs):
+        return Font(self, **oargs)
 
     def create_character(self, idname, datafiles):
         self.sys.emit_signal('beforecharactercreate', idname, self)

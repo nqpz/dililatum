@@ -110,6 +110,7 @@ class WalkTestAdvanced:
         self.time = sett.time
         self.direction = sett.direction
         self.bgtype = sett.background
+        self.shadow = sett.shadow
         self.size = (sett.width, sett.height)
 
         self.frames = {}
@@ -134,10 +135,28 @@ class WalkTestAdvanced:
         for x in 'lt', 'ct', 'rt', 'lm', 'rm', 'lb', 'cb', 'rb':
             os.path.walk(os.path.join(self.directory, x), self.path_walk, x)
 
-        self.bgsurface = pygame.Surface(self.screen.get_size()).convert()
+        self.bgsurface = \
+            pygame.Surface(self.screen.get_size()).convert()
+
+        if self.shadow:
+            self.create_shadow()
+        else:
+            self.shadow = None
 
         self.clock = pygame.time.Clock()
         self.loop()
+
+    def create_shadow(self):
+        size = (self.size[0] / 2, self.size[1] / 15)
+        ssize = [s * 3 for s in size]
+        rect = pygame.Rect((0, 0), ssize)
+        surf = pygame.Surface(ssize).convert_alpha()
+        surf.fill(pygame.Color(0, 0, 0, 0))
+        pygame.draw.ellipse(surf, pygame.Color(0, 0, 0, 200), rect)
+        surf = pygame.transform.smoothscale(surf, size)
+
+        self.shadow = surf
+        self.shadow_pos = (self.size[0] - size[0]) / 2
 
     def microseconds(self, tdelta):
         return tdelta.microseconds
@@ -164,6 +183,11 @@ class WalkTestAdvanced:
             if i >= len(self.frames[self.direction]):
                 i = 0
             img = self.frames[self.direction][i]
+
+            if self.shadow is not None:
+                self.screen.blit(self.shadow, (self.shadow_pos,
+                (self.size[1] - img[2]) / 2 + img[2] - img[2] / 10))
+
             self.screen.blit(img[0], ((300 - img[1]) / 2,
                                       (600 - img[2]) / 2))
 

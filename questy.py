@@ -71,6 +71,9 @@ parser.add_option('-H', '--nohwaccel', dest='hwaccel',
 parser.add_option('-B', '--nodoublebuf', dest='doublebuf',
                   action='store_false', default=True,
                   help='do not attempt to use double buffering (faster but perhaps uglier)')
+parser.add_option('-w', '--wait-for-complete-loading', dest='loadwait',
+                  action='store_true', default=False,
+                  help='do not autoload data as needed -- load it all at startup instead')
 parser.add_option('-q', '--quiet', dest='verbose',
                   action='store_false', default=True,
                   help='don\'t print status messages')

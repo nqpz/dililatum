@@ -21,10 +21,11 @@
 
 ##[ Name        ]## various
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
-##[ Description ]## Various minor parts
+##[ Description ]## Various minor (but still important) parts
 
 
 import sys
+from threading import Thread
 
 def read_file(filename, throw_exceptions=False):
     if not throw_exceptions:
@@ -50,3 +51,27 @@ def error(msg, cont=True, pre=None):
 
 def usable_error(msg, cont=True):
     error(msg, cont, 'questy: ')
+
+
+class thread(Thread):
+    def __init__(self, func, *args):
+        Thread.__init__(self)
+        self.func = func
+        self.args = args
+        self.setDaemon(True) # self.daemon = True
+        self.start()
+
+    def run(self):
+        self.func(*self.args)
+
+
+# Not running in daemon mode
+class nthread(Thread):
+    def __init__(self, func, *args):
+        Thread.__init__(self)
+        self.func = func
+        self.args = args
+        self.start()
+
+    def run(self):
+        self.func(*self.args)

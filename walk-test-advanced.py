@@ -57,6 +57,9 @@ parser.add_option('-y', '--height', dest='height', type='int',
 parser.add_option('-d', '--direction', dest='direction',
                   metavar='lt|ct|rt|lm|rm|lb|cb|rb', default='cb',
                   help='set walking direction')
+parser.add_option('-S', '--noshadow', dest='shadow',
+                  action='store_false', default=True,
+                  help='do not show a shadow underneath the character')
 parser.add_option('-b', '--background', dest='background',
                   metavar='R,G,B|SPECIAL', default='colorflow',
                   help='set background color using RGB triplets \

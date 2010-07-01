@@ -30,19 +30,35 @@ from questylib.bitmap import BitMap
 class Place:
     def __init__(self, world, imgfile=None, posfile=None, power=None):
         self.world = world
+        self.imgfile = imgfile
+        self.posfile = posfile
+        self.power = power
         self.name = None
         self.objects = []
         self.dir_objects = {}
-        if imgfile is not None:
-            self.surf = self.load_imgfile(imgfile)
+
+        if self.world.sys.etc.loadwait:
+            self.load_imgfile()
+            self.load_posfile()
         else:
             self.surf = None
-        self.power = power
-
-        if posfile is not None:
-            self.posoks = self.load_posfile(posfile)
-        else:
             self.posoks = None
+
+    def load_imgfile(self):
+        if self.imgfile is not None:
+            try:
+                self.surf = pygame.image.load(self.imgfile).convert()
+            except Exception:
+                pass
+
+    def load_posfile(self):
+        if self.posfile is not None:
+            try:
+                bm = BitMap(*self.world.size)
+                bm.load(self.posfile)
+                self.posoks = bm
+            except Exception:
+                pass
 
     def add_object(self, obj):
         self.objects.append(obj)
@@ -75,6 +91,9 @@ class Place:
             return False
 
         if self.posoks is None:
+            self.load_posfile()
+
+        if self.posoks is None: # Still..
             return True
         else:
             height = self.char_size(pos) * \
@@ -86,17 +105,11 @@ class Place:
                 self.posoks.get(pos[0], posmh) and \
                 self.posoks.get(pos2, posmh)
 
-    def load_imgfile(self, filename):
-        return pygame.image.load(filename).convert()
-
-    def load_posfile(self, filename):
-        bm = BitMap(*self.world.size)
-        bm.load(filename)
-        return bm
-
     def draw(self, surf=None):
         if surf is None:
             surf = self.world
+        if self.surf is None:
+            self.load_imgfile()
         surf.blit(self.surf, (0, 0))
         for obj in self.objects:
             obj.draw()

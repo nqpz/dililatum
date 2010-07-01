@@ -40,7 +40,7 @@ class GenericGame:
                                     self.sys.etc, 'green', 'grey')
         self.sys.emit_signal('aftergameinit', self)
 
-    def get_data(self, path):
+    def get_path_data(self, path):
         paths = {}
         for root, dirs, files in os.walk(path):
             name = root[len(path)+1:]
@@ -68,13 +68,15 @@ class GenericGame:
     def load_places(self, imgpath, posokpath, num=None):
         if num is None:
             num = min(
-                len(self.get_data(imgpath)[1]['.'][1]),
-                len(self.get_data(posokpath)[1]['.'][1]),
+                len(self.get_path_data(imgpath)[1]['.'][1]),
+                len(self.get_path_data(posokpath)[1]['.'][1]),
             )
-        pref = '%0' + str(len(str(num))) + 'd'
-        self.sys.emit_signal('beforeplacesload', num, pref % num)
+        numm = num - 1
+        pref = '%0' + str(len(str(numm))) + 'd'
+        self.sys.emit_signal('beforeplacesload', numm, pref % numm)
         for i in range(num):
             prefi = pref % i
+            self.sys.emit_signal('beforeplaceload', i, prefi)
             okbg = False
             suffs = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG', \
                 'gif', 'GIF', 'tga', 'TGA']
@@ -96,7 +98,7 @@ class GenericGame:
             )
             self.world.add_place(place)
             self.sys.emit_signal('afterplaceload', i, prefi)
-        self.sys.emit_signal('afterplacesload', i, prefi)
+        self.sys.emit_signal('afterplacesload')
 
     def use_data_from_map(self, path):
         plcmap = self.load_map_data(path)
