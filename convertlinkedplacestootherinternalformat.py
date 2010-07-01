@@ -25,18 +25,65 @@
                   # simpler internal format used by Questy
 
 import sys
+import os.path
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+def get_name(p):
+    name = os.path.basename(p[0][0])
+    name = name[:name.find('.')]
+    return name
 
 def convert_from_internal_to_other_internal(path):
     f = open(path, 'rb')
     data = pickle.load(f)
     f.close()
     out = ''
+    dp = data['places']
+    dl = data['links']
 
-    return out
+    points = {}
+    i = 0
+    for plc in dp:
+        j = 0
+        for p in plc[2]:
+            points['%d:%d' % (i, j)] = (get_name(plc), p)
+            j += 1
+        i += 1
+
+    i = 0
+    for p in dp:
+        name = get_name(p)
+        out += '%s\n' % name
+        rects = p[1]
+        j = 0
+        for r in rects:
+            out += '%s|' % r[2]
+            target = None
+            for l in dl:
+                if l[0][0] == 1:
+                    lrect = l[0]
+                    lpoint = l[1]
+                else:
+                    lrect = l[1]
+                    lpoint = l[0]
+                if lrect[1] == i and lrect[2] == j:
+                    target = points['%d:%d' % (lpoint[1], lpoint[2])]
+                    break
+            j += 1
+            if target is not None:
+                out += '%s|%d,%d|' % (target[0], target[1][0],
+                                        target[1][1])
+            else:
+                out += '||'
+            out += '%d,%d %d,%d|%s\n' % (r[0][0], r[0][1], r[1][0],
+                                       r[1][1], r[3])
+        out += '\n'
+        i += 1
+
+    return out[:-1]
 
 ###################
 args = sys.argv[1:]
@@ -67,4 +114,4 @@ There is NO WARRANTY, to the extent permitted by law.\
 else:
     path = args[1]
 
-print convert_from_internal_to_other_internal(path)
+print convert_from_internal_to_other_internal(path),

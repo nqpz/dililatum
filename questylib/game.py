@@ -40,8 +40,7 @@ class GenericGame:
                                     self.sys.etc, 'green', 'grey')
         self.sys.emit_signal('aftergameinit', self)
 
-    def get_data(self, directory):
-        path = os.path.join(self.datadir, directory)
+    def get_data(self, path):
         paths = {}
         for root, dirs, files in os.walk(path):
             name = root[len(path)+1:]
@@ -72,15 +71,35 @@ class GenericGame:
                 len(self.get_data(imgpath)[1]['.'][1]),
                 len(self.get_data(posokpath)[1]['.'][1]),
             )
+        pref = '%0' + str(len(str(num))) + 'd'
+        self.sys.emit_signal('beforeplacesload', num, pref % num)
         for i in range(num):
+            prefi = pref % i
+            okbg = False
+            suffs = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG', \
+                'gif', 'GIF', 'tga', 'TGA']
+            while not okbg:
+                suff = suffs[0]
+                del suffs[0]
+                backgroundpath = os.path.join(imgpath, prefi + '.' + suff)
+                okbg = os.path.isfile(backgroundpath)
+                if not okbg and len(suffs) == 0:
+                    break
+            if not okbg:
+                self.sys.error('cannot find image for place ' + prefi)
+                continue
+
+            okpospath = os.path.join(posokpath, prefi + '.questypos')
             place = self.world.create_place(
-                os.path.join(self.datadir, imgpath, '%03d.jpg' % i),
-                os.path.join(self.datadir, posokpath, '%03d.questypos' % i)
+                backgroundpath,
+                okpospath
             )
             self.world.add_place(place)
+            self.sys.emit_signal('afterplaceload', i, prefi)
+        self.sys.emit_signal('afterplacesload', i, prefi)
 
     def use_data_from_map(self, path):
-        plcmap = self.load_map_data(os.path.join(self.datadir, path))
+        plcmap = self.load_map_data(path)
         self.use_map_data(plcmap)
 
     def load_map_data(self, detailsfile):
@@ -101,17 +120,24 @@ class GenericGame:
             sinfo = {}
             for y in t[1:]:
                 if y == '': continue
+                tdet = y.split('|')
                 try:
-                    direction = dirs[y[0]]
+                    direction = dirs[tdet[0]]
                 except KeyError:
-                    direction = y[0]
-                tdet = y[1:].split('|')
-                target = int(tdet[0])
-                tdett = tdet[1].split(' ')
+                    direction = tdet[0]
+
+                try:
+                    target = int(tdet[1])
+                except Exception:
+                    target = None
+                tdett = tdet[3].split(' ')
                 objpos = eval('[' + tdett[0] + ']')
                 objsize = eval('[' + tdett[1] + ']')
-                targetpos = eval('[' + tdet[2] + ']')
-                targetdir = tdet[3]
+                try:
+                    targetpos = eval('[' + tdet[2] + ']')
+                except Exception:
+                    targetpos = None
+                targetdir = tdet[4]
                 sinfo[direction] = (target, objpos, objsize,
                                     targetpos, targetdir)
             try:
@@ -125,12 +151,18 @@ class GenericGame:
         places = self.world.places
         i = 0
         for x in data:
+            if x is None: continue
             for key, vals in x.items():
+                if vals[0] is None or vals[3] is None or vals[4] == '':
+                    actwhat = None
+                else:
+                    actwhat = [self.world.set_place, places[vals[0]], vals[3], vals[4]]
                 obj = self.world.create_object(
                     pos=vals[1], size=vals[2],
-                    action=[self.world.set_place, vals[0], vals[3], vals[4]])
+                    action=actwhat)
                 places[i].add_object(obj)
-                places[i].set_direction_object(key, obj)
+                if key:
+                    places[i].set_direction_object(key, obj)
             i += 1
 
         if fix_poss:
@@ -140,12 +172,28 @@ class GenericGame:
         places = self.world.places
         for p in places:
             for o in p.objects:
+                if o.action is None:
+                    continue
                 targetpos = o.action[2]
+                targetdir = o.action[3]
                 if targetpos[0] < 0:
                     targetpos[0] = int(
                         self.size[0] + targetpos[0] -
-                        places[o.action[1]].char_size(targetpos)
-                        * self.world.leading_character.get_frame().width)
+                        o.action[1].char_size(targetpos) *
+                        self.world.leading_character.get_frame().width
+                    )
+                elif targetdir[0] == 'l':
+                    targetpos[0] = int(
+                        targetpos[0] -
+                        o.action[1].char_size(targetpos) *
+                        self.world.leading_character.get_frame().width
+                    )
+                elif targetdir[0] == 'c':
+                    targetpos[0] = int(
+                        targetpos[0] -
+                        o.action[1].char_size(targetpos) / 2 *
+                        self.world.leading_character.get_frame().width
+                    )
 
     def end(self):
         self.sys.emit_signal('beforegameend', self)

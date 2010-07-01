@@ -54,6 +54,8 @@ class NewSurface(pygame.Surface):
         y1 = pos[1] - s2
         x2 = pos[0] + s2
         y2 = pos[1] + s2
+        if x1 < 0: x1 = 0
+        if y1 < 0: y1 = 0
 
         for i in range(y1, y2):
             if i >= self.y: break

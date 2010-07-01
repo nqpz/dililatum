@@ -77,8 +77,14 @@ class Place:
         if self.posoks is None:
             return True
         else:
+            height = self.char_size(pos) * \
+                self.world.leading_character.get_frame().height / 20
+            pos2 = pos[0] + size[0]
+            posmh = pos[1] - height
             return self.posoks.get(*pos) and \
-                self.posoks.get(pos[0] + size[0], pos[1])
+                self.posoks.get(pos2, pos[1]) and \
+                self.posoks.get(pos[0], posmh) and \
+                self.posoks.get(pos2, posmh)
 
     def load_imgfile(self, filename):
         return pygame.image.load(filename).convert()

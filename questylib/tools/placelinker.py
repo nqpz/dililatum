@@ -47,7 +47,8 @@ Special keys:
 s => stop any current special key action
 r => create a rectangle on a background
     how: press r, click on start pos, click on end pos, type name,
-         press enter, return or escape
+         press enter, return or escape, type target direction, press
+         enter, return or escape
 p => create a point on a background
     how: press p, click on a position
 l => create a link (points can have more than one link, but rects cannot)
@@ -55,6 +56,9 @@ l => create a link (points can have more than one link, but rects cannot)
 n => name a rectangle
     how: press n, click on a rectangle, type name, press enter, return
          or escape
+d => set the target direction
+    how: press d, click on a rectangle, type target direction, press
+         enter, return or escape
 m => move an object on a background
     how: press m, mouse down on an object, move object, mouse up
 a => adjust the size of a rectangle
@@ -120,8 +124,8 @@ class LinkedPlace:
             elif r.highlighted:
                 r.unhighlight()
 
-    def create_rect(self, rpos, size, name=''):
-        rect = Rect(self, rpos, size, name)
+    def create_rect(self, rpos, size, name='', target=''):
+        rect = Rect(self, rpos, size, name, target)
         self.rects.append(rect)
         return rect
 
@@ -219,15 +223,17 @@ class Borders(LinkedPlaceObject):
         self.surf.fill((0, 0, 0))
 
 class Text:
-    def __init__(self, rect):
+    def __init__(self, rect, text, where, font, color):
         self.rect = rect
-        self.font = rect.place.parent.default_font
-        self.fgcolor = rect.place.parent.default_font_color
+        self.text = text
+        self.where = where
+        self.font = font
+        self.fgcolor = color
 
     def draw(self):
         if self.rect.name == '':
             return
-        surf = self.font.render(self.rect.name, True, self.fgcolor)
+        surf = self.font.render(self.text(), True, self.fgcolor)
         size = surf.get_size()
         ratio = 1
         maxsize = [s * 0.9 for s in self.rect.size]
@@ -241,19 +247,26 @@ class Text:
         if ratio != 1:
             size = [int(s * ratio) for s in size]
             surf = pygame.transform.smoothscale(surf, size)
-        pos = [(self.rect.size[i] - size[i]) / 2 for i in range(2)]
+        if self.where[0] == 1 and self.where[1] == 1:
+            pos = [(self.rect.size[i] - size[i]) / 2 for i in range(2)]
+        elif self.where[0] == 2 and self.where[1] == 2:
+            pos = [(self.rect.size[i] - size[i]) for i in range(2)]
         self.rect.surf.blit(surf, pos)
 
 class Rect(LinkedPlaceObject):
     var = 'rect'
-    def init(self, rpos, size, name=''):
+    def init(self, rpos, size, name='', targetdir=''):
         self.rpos = rpos
         self.size = size
         self.name = name
+        self.targetdir = targetdir
 
         self.normal_color = pygame.Color(18, 13, 228, 70)
         self.highlight_color = pygame.Color(118, 213, 128, 90)
-        self.text = Text(self)
+        self.text = Text(self, lambda: self.name, (1, 1),
+                         self.place.parent.large_font, self.place.parent.large_font_color)
+        self.targettext = Text(self, lambda: self.targetdir, (2, 2),
+                               self.place.parent.small_font, self.place.parent.small_font_color)
 
     def recreate(self):
         self.surf = pygame.Surface(self.size).convert_alpha()
@@ -272,6 +285,7 @@ class Rect(LinkedPlaceObject):
         else:
             self.unmark()
         self.text.draw()
+        self.targettext.draw()
 
 class Point(LinkedPlaceObject):
     var = 'point'
@@ -321,6 +335,7 @@ class PlaceLinker:
         self.creating_point = False
         self.creating_link = False
         self.naming_rect = False
+        self.setting_target_dir = False
         self.deleting_obj = False
         self.deleting_link = False
 
@@ -353,8 +368,10 @@ and height detection\n')
         self.bgsurface.fill(self.bgcolor)
 
         match = pygame.font.match_font('freesans,dejavusans', True)
-        self.default_font = pygame.font.Font(match, 30)
-        self.default_font_color = pygame.Color(233, 30, 45)
+        self.large_font = pygame.font.Font(match, 30)
+        self.large_font_color = pygame.Color(233, 30, 45)
+        self.small_font = pygame.font.Font(match, 20)
+        self.small_font_color = pygame.Color(30, 233, 45)
 
     def blit(self, obj):
         size = obj.size
@@ -510,7 +527,7 @@ and height detection\n')
             rects = []
             points = []
             for r in plc.rects:
-                rects.append((r.rpos, r.size, r.name))
+                rects.append((r.rpos, r.size, r.name, r.targetdir))
             for p in plc.points:
                 points.append(p.rrpos)
             dp.append((place, tuple(rects), tuple(points)))
@@ -656,7 +673,7 @@ and height detection\n')
 
             self.creating_rect = False
             self.bgsurface.fill(self.bgcolor)
-            self.begin_naming_rect(rect)
+            self.begin_naming_rect(rect, True)
 
     def begin_adjusting_rect(self, mod=0):
         self.adjusting_rect_mod = mod
@@ -747,8 +764,9 @@ and height detection\n')
                 self.creating_link = False
                 self.bgsurface.fill(self.bgcolor)
 
-    def begin_naming_rect(self, obj=None):
+    def begin_naming_rect(self, obj=None, also_name_target_dir=False):
         self.naming_rect = 1
+        self.temp_also_name_dir = also_name_target_dir
         if obj is not None:
             self.temp_obj = obj
             self.reset_naming_rect()
@@ -777,6 +795,41 @@ and height detection\n')
             self.special_key_func = None
             self.naming_rect = False
             self.temp_naming_obj = None
+            self.bgsurface.fill(self.bgcolor)
+            if self.temp_also_name_dir:
+                self.also_name_dir = False
+                self.begin_setting_target_dir(self.temp_obj)
+
+    def begin_setting_target_dir(self, obj=None):
+        self.setting_target_dir = 1
+        if obj is not None:
+            self.temp_obj = obj
+            self.reset_setting_target_dir()
+        self.bgsurface.fill((200, 150, 200))
+
+    def dir_namer(self, event):
+        if event.key in (K_RETURN, K_KP_ENTER, K_ESCAPE):
+            self.setting_target_dir = 2
+            self.continue_setting_target_dir()
+        elif event.key == K_BACKSPACE:
+            self.temp_obj.targetdir = self.temp_obj.targetdir[:-1]
+            self.temp_obj.update()
+        else:
+            self.temp_obj.targetdir += event.unicode
+            self.temp_obj.update()
+
+    def reset_setting_target_dir(self):
+        self.temp_obj.targetdir = ''
+        self.special_key_func = self.dir_namer
+
+    def continue_setting_target_dir(self):
+        if self.setting_target_dir == 1:
+            self.temp_obj = self.current_hovered_place.highlighted_obj
+            if self.temp_obj is not None and self.temp_obj.var == 'rect':
+                self.reset_setting_target_dir()
+        elif self.setting_target_dir == 2:
+            self.special_key_func = None
+            self.setting_target_dir = False
             self.bgsurface.fill(self.bgcolor)
 
     def begin_deleting_obj(self):
@@ -836,6 +889,9 @@ and height detection\n')
             if npos[1] + to.size[1] > to.place.size[1]:
                 npos[1] = to.place.size[1] - to.size[1]
 
+            if self.temp_object.var == 'point':
+                o = self.temp_object
+                o.rrpos = [o.rrpos[i] + npos[i] - o.rpos[i] for i in range(2)]
             self.temp_object.rpos = npos
 
     def end_obj_moving(self):
@@ -867,6 +923,8 @@ and height detection\n')
                                 self.continue_creating_link()
                             elif self.naming_rect:
                                 self.continue_naming_rect()
+                            elif self.setting_target_dir:
+                                self.continue_setting_target_dir()
                             elif self.deleting_obj:
                                 self.continue_deleting_obj()
                             elif self.deleting_link:
@@ -922,37 +980,35 @@ and height detection\n')
                         not self.creating_point  and \
                         not self.creating_link    and \
                         not self.naming_rect       and \
-                        not self.deleting_obj       and \
-                        not self.deleting_link       and \
+                        not self.setting_target_dir and \
+                        not self.deleting_obj        and \
+                        not self.deleting_link        and \
                         not self.moving_an_object
 
-                    if event.key == K_r:
-                        if nothing:
-                            self.begin_creating_rect()
-                    if event.key == K_a:
-                        if nothing:
-                            mods = pygame.key.get_mods()
-                            if mods & KMOD_SHIFT:
-                                mod = 1
-                            elif mods & KMOD_CTRL:
-                                mod = 2
-                            else:
-                                mod = 0
-                            self.begin_adjusting_rect(mod)
-                    elif event.key == K_p:
-                        if nothing:
-                            self.begin_creating_point()
-                    elif event.key == K_l:
-                        if nothing:
-                            self.begin_creating_link()
-                    elif event.key == K_n:
-                        if nothing:
-                            self.begin_naming_rect()
-                    elif event.key == K_DELETE:
+                    if event.key == K_r and nothing:
+                        self.begin_creating_rect()
+                    if event.key == K_a and nothing:
+                        mods = pygame.key.get_mods()
+                        if mods & KMOD_SHIFT:
+                            mod = 1
+                        elif mods & KMOD_CTRL:
+                            mod = 2
+                        else:
+                            mod = 0
+                        self.begin_adjusting_rect(mod)
+                    elif event.key == K_p and nothing:
+                        self.begin_creating_point()
+                    elif event.key == K_l and nothing:
+                        self.begin_creating_link()
+                    elif event.key == K_n and nothing:
+                        self.begin_naming_rect()
+                    elif event.key == K_d and nothing:
+                        self.begin_setting_target_dir()
+                    elif event.key == K_DELETE and nothing:
                         self.begin_deleting_obj()
-                    elif event.key == K_e:
+                    elif event.key == K_e and nothing:
                         self.begin_deleting_link()
-                    elif event.key == K_m:
+                    elif event.key == K_m and nothing:
                         self.begin_obj_moving()
                     elif event.key == K_PAGEDOWN:
                         self.relative_zoom(pos, False)
@@ -964,8 +1020,11 @@ and height detection\n')
                             self.save()
                         elif not nothing:
                             self.creating_rect = False
+                            self.adjusting_rect = False
                             self.creating_point = False
                             self.creating_link = False
+                            self.naming_rect = False
+                            self.setting_target_dir = False
                             self.deleting_obj = False
                             self.deleting_link = False
                             self.moving_an_object = False

@@ -209,6 +209,17 @@ class World:
         surf = pygame.transform.smoothscale(surf, [int(x * self.sys.etc.zoom) for x in surf.get_size()])
         self.screen.blit(surf, [self.screen_offset[i] + pos[i] * self.sys.etc.zoom for i in range(2)])
 
+    def load_image(self, path, alpha=True):
+        img = pygame.image.load(path)
+        if alpha:
+            return img.convert_alpha()
+        else:
+            return img.convert()
+
+    def show_image(self, surf, pos=(0, 0)):
+        self.blit(surf, pos)
+        pygame.display.flip()
+
     def create_character(self, idname, datafiles):
         self.sys.emit_signal('beforecharactercreate', idname, self)
         char = Character(self, idname, datafiles)

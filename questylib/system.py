@@ -29,6 +29,18 @@ from pygame.locals import MOUSEMOTION, MOUSEBUTTONUP, MOUSEBUTTONDOWN
 import questylib.various as various
 from questylib.statusprinter import StatusPrinter
 
+
+class Event:
+    def __init__(self, name='', args=[], uargs=[]):
+        self.name = name
+        self.args = args
+        self.uargs = uargs
+
+    def __str__(self):
+        return 'event:%s;args=%s;uargs=%s' % (self.name,
+                                              str(self.args),
+                                              str(self.uargs))
+
 class SignalDict(dict):
     def add(self, signal, *func_and_args):
         try:
@@ -43,14 +55,14 @@ class SignalDict(dict):
                 d.remove(x)
                 break
 
-    def run(self, *signal_and_args):
-        signal = signal_and_args[0]
-        args = signal_and_args[1:]
+    def run(self, signal, obj):
         try:
             for func in self.__getitem__(signal):
-                targs = list(args)
-                targs.extend(func[1:])
-                func[0](*targs)
+                try:
+                    obj.uargs = func[1:]
+                except Exception:
+                    pass
+                func[0](obj)
         except KeyError:
             pass
 
@@ -80,13 +92,16 @@ See <http://metanohi.org/projects/questy/> for downloads and documentation.''')
         self.emit_signal('aftersysteminit', self)
 
     def emit_signal(self, *signal_and_args):
-            self.signalactions.run(*signal_and_args)
+        signal = signal_and_args[0]
+        args = signal_and_args[1:]
+        event = Event(signal, args)
+        self.signalactions.run(signal, event)
 
     def emit_event(self, *event_and_type):
         if self.etc.zoom != 1 and \
                 event_and_type[0] in (MOUSEMOTION, MOUSEBUTTONUP,
                                       MOUSEBUTTONDOWN):
-            event_and_type = list(event_and_type)
+            event_and_type = list(event_and_type[:])
             event_and_type[1] = [x / self.etc.zoom for x in event_and_type[1].pos]
         self.gameactions.run(*event_and_type)
 
@@ -95,8 +110,8 @@ See <http://metanohi.org/projects/questy/> for downloads and documentation.''')
         self.status('Starting system...')
         fgame = __import__(self.etc.game + '.game', globals(), locals(),
                            ['Game'], -1)
-        os.chdir(os.path.dirname(fgame.__file__))
         self.game = fgame.Game(self)
+        os.chdir(os.path.join(os.path.dirname(fgame.__file__), self.game.datadir))
         self.status(
             'Name of game is: %s' % self.game.name + '\n' +
             'Size of game is: %dx%d' % tuple(self.game.size))

@@ -58,32 +58,22 @@ class Object:
     def check_if_action_needed(self, pos, size, act_if_true=True):
         if self.type == 0:
             if self.rel == 0:
-                pos = self.world.current_place.char_pos(pos)
-            return self.char_in_obj_check(pos, size, act_if_true)
+                npos = self.world.current_place.char_pos(pos)
+            return self.char_in_obj_check(npos, size, act_if_true)
 
     def char_in_obj_check(self, pos, size, act_if_true=True):
         if self.position is None:
             return False
-        sf = [self.position[:]]
-        sf.append((sf[0][0], sf[0][1] + self.size[1]))
-        sf.append((sf[0][0] + self.size[0], sf[0][1]))
-        sf.append((sf[0][0] + self.size[0], sf[0][1] + self.size[1]))
-        of = [pos[:]]
-        of.append((of[0][0], of[0][1] + size[1]))
-        of.append((of[0][0] + size[0], of[0][1]))
-        #of.append((of[0][0] + size[0], of[0][1] + size[1]))
-
-        ok = False
-        for s in sf:
-            if of[0][0] < s[0] < of[2][0] and \
-                    of[0][1] < s[1] < of[1][1]:
-                ok = True
-                break
-
-        if ok and act_if_true:
+        pos1 = [pos[0], pos[1] - size[1] / 20]
+        pos2 = [pos[0] + size[0], pos[1]]
+        xos1 = self.position
+        xos2 = [self.position[i] + self.size[i] for i in range(2)]
+        touch = pos1[0] < xos2[0] and pos2[0] > xos1[0] and \
+            pos1[1] < xos2[1] and pos2[1] > xos1[1]
+        if touch and act_if_true:
             self.do_action()
 
-        return ok
+        return touch
 
     def do_action(self):
         if self.action is not None:
