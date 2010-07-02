@@ -68,6 +68,8 @@ class Character:
                 lt=(-2.12, -2.12),
                 rb=(2.12, 2.12)
         ))
+        self.use_shadow = get('shadow', True)
+        self.shadow_details = get('shadowdetails', {})
         self.default_position = (
             self.world.size[0] / 2,
             self.world.size[1] * 0.9)
@@ -75,6 +77,10 @@ class Character:
         self.position = self.position[:]
         self.modified_position = self.position[:]
         self.visible = True
+
+        self.create()
+        if self.use_shadow:
+            self.create_shadow()
 
     def convert_files_to_surfaces(self, *files):
         frames = []
@@ -90,6 +96,28 @@ class Character:
                 files = [os.path.join(self.data[0], x, t) for t in files]
                 self.frames[x] = \
                     self.convert_files_to_surfaces(*files)
+        maxw = 0
+        maxh = 0
+        for x in self.frames.values():
+            for y in x:
+                if y.width > maxw:
+                    maxw = y.width
+                if y.height > maxh:
+                    maxh = y.height
+        self.maxsize = (maxw, maxh)
+
+    def create_shadow(self):
+        charsurf = self.frames['cb'][0]
+        size = (charsurf.width - charsurf.width / 15, charsurf.height / 15)
+        ssize = [s * 3 for s in size]
+        rect = pygame.Rect((0, 0), ssize)
+        surf = pygame.Surface(ssize).convert_alpha()
+        surf.fill(pygame.Color(0, 0, 0, 0))
+        pygame.draw.ellipse(surf, pygame.Color(0, 0, 0, 200), rect)
+        surf = pygame.transform.smoothscale(surf, size)
+
+        self.shadow = surf
+        self.shadow_size = surf.get_size()
 
     def get_size(self, pos, img=None):
         resize = self.world.current_place.char_size(pos)
@@ -124,8 +152,9 @@ class Character:
             or (a == 'rb' and b == 'lt')
 
     def walk(self, direction, screen_limits=True, scale=1.0):
-        w, h, resize = self.get_size(self.modified_position)
+        w, h, resize = self.get_size(self.position)
         size = w, h
+        maxsize = [s * resize for s in self.maxsize]
         mov = self.movement[direction]
         pos = self.position
         pos_ok = False
@@ -134,42 +163,32 @@ class Character:
         while not pos_ok:
             npos = [int(pos[i] + mov[i] * resize * scale *
                         self.world.size[i] / 100.0) for i in range(2)]
-            mnpos = self.world.current_place.char_pos(npos)
-            pos_ok = self.world.current_place.pos_ok(mnpos, size,
+            mpos = self.world.current_place.char_pos(npos)
+            pos_ok = self.world.current_place.pos_ok(mpos, maxsize,
                                                      screen_limits)
             scale -= .1
-            if scale < 0.5:
+            if scale < 0.4:
                 break
         if pos_ok:
             conti = True
             for o in self.world.current_place.objects:
                 t = o.check_if_action_needed(npos, size)
-                if t: conti = False
+                if not t: conti = False
             if conti:
                 self.direction = direction
                 self.position = npos
-                self.modified_position = mnpos
+                self.modified_position = mpos
                 self.walking = True
         else:
             self.stop()
-
-            # Double checking -- character frames are not necessarily
-            # of the same dimensions
-
-            if self.position[0] + w  >= self.world.size[0]:
-                self.position[0] = self.world.size[0] - 1 - w
-            if self.position[0] < 0:
-                self.position[0] = 0
-
-            if self.position[1] >= self.world.size[1]:
-                self.position[1] = self.world.size[1] - 1
-            if self.position[1] + h < 0:
-                self.position[1] = 0
 
     def reset_position(self):
         self.position = self.original_position[:]
         self.modified_position = self.original_position[:]
         self.direction = self.original_direction
+        w, h, resize = self.get_size(self.modified_position)
+        for o in self.world.current_place.objects:
+            o.check_if_action_needed(self.position, (w, h))
 
     def hide(self):
         self.visible = False
@@ -181,8 +200,15 @@ class Character:
         if not self.visible: return False
         img = self.get_frame()
         pos = self.modified_position
+
         w, h, r = self.get_size(pos, img)
         img = pygame.transform.smoothscale(img.surf, (w, h))
         if surf is None:
             surf = self.world
+        if self.use_shadow:
+            ssize = [int(s * r) for s in self.shadow_size]
+            shad = pygame.transform.smoothscale(
+                self.shadow, ssize)
+            shad_pos = (pos[0] + (w - ssize[0]) / 2, pos[1] - h / 15)
+            surf.blit(shad, shad_pos)
         surf.blit(img, (pos[0], pos[1] - h))

@@ -28,17 +28,23 @@ from pygame.locals import *
 from questylib.bitmap import BitMap
 
 class Place:
-    def __init__(self, world, imgfile=None, posfile=None, power=None):
+    def __init__(self, world, imgfile=None, posfile=None, **oargs):
+        def get(key, default):
+            try: return oargs[key]
+            except KeyError: return default
         self.world = world
         self.imgfile = imgfile
         self.posfile = posfile
-        self.power = power
+        self.power = get('power', None)
         self.name = None
         self.objects = []
+        self.objects = get('objs', [])
+        self.obj_names = {}
         self.dir_objects = {}
 
         if self.world.sys.etc.loadwait:
             self.load_imgfile()
+            self.load_overlays()
             self.load_posfile()
         else:
             self.surf = None
@@ -111,6 +117,4 @@ class Place:
         if self.surf is None:
             self.load_imgfile()
         surf.blit(self.surf, (0, 0))
-        for obj in self.objects:
-            obj.draw()
 

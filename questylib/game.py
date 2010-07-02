@@ -65,7 +65,7 @@ class GenericGame:
     def run_game(self):
         pass
 
-    def load_places(self, imgpath, posokpath, num=None):
+    def load_places(self, imgpath, posokpath, objspath, num=None):
         if num is None:
             num = min(
                 len(self.get_path_data(imgpath)[1]['.'][1]),
@@ -73,7 +73,36 @@ class GenericGame:
             )
         numm = num - 1
         pref = '%0' + str(len(str(numm))) + 'd'
+
         self.sys.emit_signal('beforeplacesload', numm, pref % numm)
+ 
+        overlays = {}
+        for x in self.get_path_data(objspath)[1]['.'][1]:
+            i = x.split('-')
+            inum = i[0]
+            pos = [int(y) for y in i[1].split(',')]
+            rel = int(i[2])
+            spl = i[3].split(',')
+            for y in range(2):
+                try:
+                    spl[y] = int(spl[y])
+                except Exception:
+                    spl[y] = None
+            end_or_start = spl
+            if len(i) < 6:
+                start = [None, 0]
+                end = end_or_start
+                name = i[4].split('.')[0]
+            else:
+                start = end_or_start
+                end = [int(y) for y in i[3].split(',')]
+                name = i[5].split('.')[0]
+            inf = (x, pos, rel, start, end, name)
+            try:
+                overlays[inum].append(inf)
+            except Exception:
+                overlays[inum] = [inf]
+
         for i in range(num):
             prefi = pref % i
             self.sys.emit_signal('beforeplaceload', i, prefi)
@@ -96,6 +125,20 @@ class GenericGame:
                 backgroundpath,
                 okpospath
             )
+            try:
+                ovobjs = overlays[prefi]
+            except KeyError:
+                ovobjs = []
+            for i in range(len(ovobjs)):
+                c = ovobjs[i]
+                ovobjs[i] = self.world.create_object(
+                    rel=c[2], pos=c[1], area=(c[3], c[4]),
+                    imgfile=os.path.join(objspath, c[0]),
+                    visible=False)
+                ovobjs[i].action = [ovobjs[i].show]
+                ovobjs[i].unaction = [ovobjs[i].hide]
+                place.add_object(ovobjs[i])
+                place.obj_names[c[5]] = ovobjs[i]
             self.world.add_place(place)
             self.sys.emit_signal('afterplaceload', i, prefi)
         self.sys.emit_signal('afterplacesload')
@@ -160,8 +203,9 @@ class GenericGame:
                 else:
                     actwhat = [self.world.set_place, places[vals[0]], vals[3], vals[4]]
                 obj = self.world.create_object(
-                    pos=vals[1], size=vals[2],
-                    action=actwhat)
+                    pos=vals[1], size=vals[2], area=vals[1:3],
+                    action=actwhat, walkonact=False)
+                obj.isdirobj = True
                 places[i].add_object(obj)
                 if key:
                     places[i].set_direction_object(key, obj)
@@ -174,7 +218,7 @@ class GenericGame:
         places = self.world.places
         for p in places:
             for o in p.objects:
-                if o.action is None:
+                if not 'isdirobj' in dir(o) or o.action is None:
                     continue
                 targetpos = o.action[2]
                 targetdir = o.action[3]

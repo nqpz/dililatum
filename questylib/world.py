@@ -226,10 +226,9 @@ class World:
     def create_font(self, **oargs):
         return Font(self, **oargs)
 
-    def create_character(self, idname, datafiles):
+    def create_character(self, idname, datafiles, **oargs):
         self.sys.emit_signal('beforecharactercreate', idname, self)
-        char = Character(self, idname, datafiles)
-        char.create()
+        char = Character(self, idname, datafiles, **oargs)
         self.sys.emit_signal('aftercharactercreate', char)
         return char
 
@@ -360,6 +359,7 @@ class World:
                 pass
         if npos is None:
             npos = self.leading_character.default_position
+        self.leading_character.stop()
         self.leading_character.original_position = npos
         self.leading_character.position = npos[:]
         self.leading_character.modified_position = npos[:]
@@ -367,7 +367,6 @@ class World:
             self.leading_character.original_direction = direction
             self.leading_character.direction = direction
             self.leading_character_direction = direction
-        self.leading_character.stop()
 
     def get_center(self):
         return [x / 2 for x in self.size]
@@ -377,6 +376,9 @@ class World:
         self.current_place.draw()
         for char in self.characters:
             char.draw()
+        for obj in self.current_place.objects:
+            obj.draw()
+
 
         if self.screen_bars[0] is not None:
             self.screen.blit(self.screen_bars[0], (0, 0))

@@ -23,6 +23,7 @@
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
 ##[ Description ]## Controls the general aspects of the engine
 
+import sys
 import os
 from datetime import datetime
 from pygame.locals import MOUSEMOTION, MOUSEBUTTONUP, MOUSEBUTTONDOWN
@@ -81,8 +82,8 @@ class System:
         self.status('''\
 Questy is free software: you are free to change and redistribute it
 under the terms of the GNU GPL, version 3 or any later version.
-There is NO WARRANTY, to the extent permitted by law.
-See <http://metanohi.org/projects/questy/> for downloads and documentation.''')
+There is NO WARRANTY, to the extent permitted by law. See
+<http://metanohi.org/projects/questy/> for downloads and documentation.''')
 
         self.debugargs = self.etc.debugarguments
         if self.etc.debug is not None:
@@ -108,7 +109,16 @@ See <http://metanohi.org/projects/questy/> for downloads and documentation.''')
     def start(self):
         self.emit_signal('beforesystemstart', self)
         self.status('Starting system...')
-        fgame = __import__(self.etc.game + '.game', globals(), locals(),
+
+        if os.path.isdir(self.etc.game):
+            sys.path.append(self.etc.game)
+            module_name = os.path.split(os.path.dirname(self.etc.game))[1]
+            if module_name == '':
+                module_name = self.etc.game
+        else:
+            module_name = self.etc.game
+
+        fgame = __import__(module_name + '.game', globals(), locals(),
                            ['Game'], -1)
         self.game = fgame.Game(self)
         os.chdir(os.path.join(os.path.dirname(fgame.__file__), self.game.datadir))
