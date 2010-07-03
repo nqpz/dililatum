@@ -86,12 +86,10 @@ parser.add_option('-S', '--simpleprint', dest='simpleprint',
 parser.add_option('-E', '--nocolorerrors', dest='colorerrors',
                   action='store_false', default=True,
                   help='do not attempt to print error messages in the terminal in a red color')
-parser.add_option('-d', '--debug-with-file', dest='debugfile',
+parser.add_option('-d', '--debug-file', dest='debugfiles',
+                  action='append', default=[],
                   metavar='FILE', help='debug Questy using a Python file')
-parser.add_option('-D', '--debug-with-string', dest='debugstring',
-                  metavar='CODE',
-                  help='debug Questy using a string of Python code')
-parser.add_option('-a', '--add-debug-argument', dest='debugarguments',
+parser.add_option('-a', '--add-debug-argument', dest='arguments',
                   default=[], action='append', metavar='STRING',
                   help='add an argument to interact with your debug code')
 
@@ -125,27 +123,6 @@ if options.size is not None:
             raise Exception()
     except Exception:
         parser.error('size syntax is wrong, use [WIDTH]x[HEIGHT], quitting', False)
-
-# Debug options
-d_a = options.debugstring is not None
-d_b = options.debugfile is not None
-if d_a or d_b:
-    debugtext = ''
-if d_a:
-    debugtext += options.debugstring + '\n'
-if d_b:
-    debugtext += various.read_file(options.debugfile) + '\n'
-if d_a or d_b:
-    try:
-        options.debug = compile(debugtext, '<debugcode>', 'exec')
-    except Exception, e:
-        parser.error(str(e), False)
-    del debugtext
-else:
-    options.debug = None
-
-del options.debugfile
-del options.debugstring
 
 setproctitle(parser.prog)
 

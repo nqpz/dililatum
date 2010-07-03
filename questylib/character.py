@@ -71,7 +71,7 @@ class Character:
         self.use_shadow = get('shadow', True)
         self.shadow_details = get('shadowdetails', {})
         self.default_position = (
-            self.world.size[0] / 2,
+            self.world.size[0] / 2.2,
             self.world.size[1] * 0.9)
         self.original_position = get('position', self.default_position[:])
         self.position = self.position[:]

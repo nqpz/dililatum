@@ -92,6 +92,10 @@ class LinkedPlace:
 
         self.borders = Borders(self)
 
+        surf = self.parent.large_font.render(os.path.basename(path),
+                                             True, (0, 0, 255))
+        self.surf.blit(surf, (0, 0))
+
     def check_hovered(self, pos):
         ipos = [pos[i] - self.pos[i] for i in range(2)]
         h = ipos[0] >= 0 and ipos[0] < self.size[0] and \
@@ -512,6 +516,11 @@ and height detection\n')
             self.places.append(plc)
 
     def save(self):
+        for p in self.places:
+            for r in p.rects:
+                if 0 in r.size:
+                    p.remove_object(r)
+
         ofn = self.outfilename
         if not self.fileoverride:
             while os.path.exists(ofn):

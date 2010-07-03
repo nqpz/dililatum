@@ -25,6 +25,7 @@
 
 from datetime import datetime
 import os
+from questylib.world import World
 from questylib.statusprinter import StatusPrinter
 from questylib.various import *
 
@@ -39,6 +40,9 @@ class GenericGame:
         self.status = StatusPrinter(self.shortname.upper(),
                                     self.sys.etc, 'green', 'grey')
         self.sys.emit_signal('aftergameinit', self)
+
+    def create_world(self):
+        self.world = World(self.sys, self.size)
 
     def get_path_data(self, path):
         paths = {}
@@ -74,7 +78,7 @@ class GenericGame:
         numm = num - 1
         pref = '%0' + str(len(str(numm))) + 'd'
 
-        self.sys.emit_signal('beforeplacesload', numm, pref % numm)
+        self.sys.emit_signal('beforeplacesload', self, numm, pref % numm)
  
         overlays = {}
         for x in self.get_path_data(objspath)[1]['.'][1]:
@@ -105,7 +109,7 @@ class GenericGame:
 
         for i in range(num):
             prefi = pref % i
-            self.sys.emit_signal('beforeplaceload', i, prefi)
+            self.sys.emit_signal('beforeplaceload', self, i, prefi)
             okbg = False
             suffs = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG', \
                 'gif', 'GIF', 'tga', 'TGA']
@@ -123,7 +127,8 @@ class GenericGame:
             okpospath = os.path.join(posokpath, prefi + '.questypos')
             place = self.world.create_place(
                 backgroundpath,
-                okpospath
+                okpospath,
+                power=1.5
             )
             try:
                 ovobjs = overlays[prefi]
@@ -140,14 +145,15 @@ class GenericGame:
                 place.add_object(ovobjs[i])
                 place.obj_names[c[5]] = ovobjs[i]
             self.world.add_place(place)
-            self.sys.emit_signal('afterplaceload', i, prefi)
-        self.sys.emit_signal('afterplacesload')
+            self.sys.emit_signal('afterplaceload', self, i, prefi)
+        self.sys.emit_signal('afterplacesload', self)
 
     def use_data_from_map(self, path):
         plcmap = self.load_map_data(path)
         self.use_map_data(plcmap)
 
     def load_map_data(self, detailsfile):
+        self.sys.emit_signal('beforemapload', self)
         det = read_file(detailsfile)
         dirs = {
             '^': 'up',
@@ -213,6 +219,7 @@ class GenericGame:
 
         if fix_poss:
             self.fix_places_with_minus_x_positions()
+        self.sys.emit_signal('aftermapload', self)
 
     def fix_places_with_minus_x_positions(self):
         places = self.world.places
@@ -234,16 +241,21 @@ class GenericGame:
                         o.action[1].char_size(targetpos) *
                         self.world.leading_character.get_frame().width
                     )
-                elif targetdir[0] == 'c':
+                elif targetdir in ('ct', 'cb', 'lt', 'lb', 'rt', 'rb'):
                     targetpos[0] = int(
                         targetpos[0] -
                         o.action[1].char_size(targetpos) / 2 *
                         self.world.leading_character.get_frame().width
                     )
 
+    def load(self):
+        pass
+
+    def save(self):
+        pass
+
     def end(self):
         self.sys.emit_signal('beforegameend', self)
-        try: self.world.end()
-        except Exception: pass
+        self.world.end()
         self.sys.emit_signal('aftergameend', self)
 

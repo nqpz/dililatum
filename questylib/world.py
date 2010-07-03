@@ -227,7 +227,7 @@ class World:
         return Font(self, **oargs)
 
     def create_character(self, idname, datafiles, **oargs):
-        self.sys.emit_signal('beforecharactercreate', idname, self)
+        self.sys.emit_signal('beforecharactercreate', self, idname)
         char = Character(self, idname, datafiles, **oargs)
         self.sys.emit_signal('aftercharactercreate', char)
         return char
@@ -336,11 +336,11 @@ class World:
         self.sys.emit_signal('afterobjectcreate', obj)
         return obj
 
-    def create_place(self, *args):
+    def create_place(self, *args, **oargs):
         self.sys.emit_signal('beforeplacecreate', self)
         args = list(args)
         args.insert(0, self)
-        place = Place(*args)
+        place = Place(*args, **oargs)
         self.sys.emit_signal('afterplacecreate', place)
         return place
 

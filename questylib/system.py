@@ -85,11 +85,21 @@ under the terms of the GNU GPL, version 3 or any later version.
 There is NO WARRANTY, to the extent permitted by law. See
 <http://metanohi.org/projects/questy/> for downloads and documentation.''')
 
-        self.debugargs = self.etc.debugarguments
-        if self.etc.debug is not None:
-            action = self.signalactions.add
-            exec(self.etc.debug)
-
+        for f in self.etc.debugfiles:
+            d = os.path.dirname(f)
+            b = os.path.basename(f)
+            b = b[:b.find('.py')]
+            if os.path.isdir(d):
+                sys.path.append(d)
+                module_name = os.path.split(d)[1]
+                if module_name == '':
+                    module_name = d
+            else:
+                module_name = d
+            mod = __import__(module_name + '.' + b, globals(), locals(),
+                             ['main'], -1)
+            mod.action = self.signalactions.add
+            mod.main()
         self.emit_signal('aftersysteminit', self)
 
     def emit_signal(self, *signal_and_args):
