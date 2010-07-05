@@ -172,7 +172,7 @@ class Character:
         if pos_ok:
             conti = True
             for o in self.world.current_place.objects:
-                t = o.check_if_action_needed(npos, size)
+                t = o.check_if_action_needed(npos, maxsize)
                 if not t: conti = False
             if conti:
                 self.direction = direction

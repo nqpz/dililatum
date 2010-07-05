@@ -35,7 +35,6 @@ class Place:
         self.world = world
         self.imgfile = imgfile
         self.posfile = posfile
-        self.power = get('power', None)
         self.name = None
         self.objects = []
         self.objects = get('objs', [])
@@ -44,7 +43,6 @@ class Place:
 
         if self.world.sys.etc.loadwait:
             self.load_imgfile()
-            self.load_overlays()
             self.load_posfile()
         else:
             self.surf = None
@@ -76,24 +74,16 @@ class Place:
         self.objects.remove(obj)
 
     def char_size(self, pos):
-        if self.power is None:
-            return 1.0
-        else:
-            return (float(pos[1]) / self.world.size[1]) ** self.power
+        return 1.0
 
     def char_pos(self, pos):
         return pos
 
-    def set_char_size(self, inst):
-        self.char_size = inst
-
-    def set_char_pos(self, inst):
-        self.char_pos = inst
-
     def pos_ok(self, pos, size, screen_limits=True):
         if screen_limits and \
-                pos[0] < 0 or pos[0] + size[0] > self.world.size[0] \
-                or pos[1] - size[1] / 20 < 0 or pos[1] > self.world.size[1]:
+                pos[0] < -20 or pos[0] + size[0] + 20 > self.world.size[0] \
+                or pos[1] - size[1] / 20 < -20 or pos[1] > \
+                self.world.size[1] + 20:
             return False
 
         if self.posoks is None:

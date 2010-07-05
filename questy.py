@@ -130,11 +130,11 @@ qs = System(options, parser.error)
 qs.start()
 qs.end()
 
-# try:
-#     qs.start()
-# except (KeyboardInterrupt, EOFError):
-#     print
-# except Exception, error:
-#     parser.error(str(error))
-# finally:
-#     qs.end()
+#try:
+#    qs.start()
+#except (KeyboardInterrupt, EOFError):
+#    print
+#except Exception, error:
+#    parser.error(str(error))
+#finally:
+#    qs.end()

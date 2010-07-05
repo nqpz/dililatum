@@ -127,8 +127,7 @@ class GenericGame:
             okpospath = os.path.join(posokpath, prefi + '.questypos')
             place = self.world.create_place(
                 backgroundpath,
-                okpospath,
-                power=1.5
+                okpospath
             )
             try:
                 ovobjs = overlays[prefi]
