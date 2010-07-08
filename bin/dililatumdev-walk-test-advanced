@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Questy: a quest system for simple RPGs
+# Dililatum: a quest system for simple RPGs
 # Copyright (C) 2010  Niels Serup
 
-# This file is part of Questy.
+# This file is part of Dililatum.
 #
-# Questy is free software: you can redistribute it and/or modify
+# Dililatum is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Questy is distributed in the hope that it will be useful,
+# Dililatum is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Questy.  If not, see <http://www.gnu.org/licenses/>.
+# along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
 ##[ Name        ]## walk-test-advanced
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
@@ -25,21 +25,23 @@
                   # directions, forcing the user to use the arrow
                   # keys to control the character.
 
-
+import sys
 from optparse import OptionParser
-from questylib.tools.walktest import WalkTestAdvanced
+try:
+    from dililatum.tools.walktest import WalkTestAdvanced
+except ImportError:
+    import os.path
+    sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
+    from dililatum.tools.walktest import WalkTestAdvanced
+import dililatum.generalinformation as ginfo
 
 parser = OptionParser(prog='walk-test-advanced',
                       usage='Usage: %prog [OPTION]... [DIRECTORY]',
                       description='\
 Shows an animated walk sequence in several directions, \
 forcing the user to use the arrow keys to control the character.',
-                      version='''\
-Questy 0.1
-Copyright (C) 2010  Niels Serup
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.''', epilog='\
+                      version=ginfo.version_text,
+                      epilog='\
 Navigate the character using the keypad keys or the number keys.')
 parser.add_option('-t', '--time', dest='time', type='int',
                   metavar='MILLISECONDS', default=250,

@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Questy: a quest system for simple RPGs
+# Dililatum: a quest system for simple RPGs
 # Copyright (C) 2010  Niels Serup
 
-# This file is part of Questy.
+# This file is part of Dililatum.
 #
-# Questy is free software: you can redistribute it and/or modify
+# Dililatum is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Questy is distributed in the hope that it will be useful,
+# Dililatum is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Questy.  If not, see <http://www.gnu.org/licenses/>.
+# along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
 ##[ Name        ]## system
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
@@ -27,8 +27,8 @@ import sys
 import os
 from datetime import datetime
 from pygame.locals import MOUSEMOTION, MOUSEBUTTONUP, MOUSEBUTTONDOWN
-import questylib.various as various
-from questylib.statusprinter import StatusPrinter
+import dililatum.various as various
+from dililatum.statusprinter import StatusPrinter
 
 
 class Event:
@@ -80,10 +80,10 @@ class System:
 
         self.status = StatusPrinter('SYSTEM', self.etc, 'white', 'red')
         self.status('''\
-Questy is free software: you are free to change and redistribute it
+Dililatum is free software: you are free to change and redistribute it
 under the terms of the GNU GPL, version 3 or any later version.
 There is NO WARRANTY, to the extent permitted by law. See
-<http://metanohi.org/projects/questy/> for downloads and documentation.''')
+<http://metanohi.org/projects/dililatum/> for downloads and documentation.''')
 
         for f in self.etc.debugfiles:
             d = os.path.dirname(f)
@@ -121,13 +121,22 @@ There is NO WARRANTY, to the extent permitted by law. See
         self.status('Starting system...')
 
         if os.path.isdir(self.etc.game):
-            sys.path.append(self.etc.game)
-            module_name = os.path.split(os.path.dirname(self.etc.game))[1]
+            if not os.path.isfile(os.path.join(self.etc.game,
+                                               'game.py')):
+                # If your game name is "SuperSheep", your package name
+                # is likely to be "supersheep".
+                pathdir = os.path.join(
+                    self.etc.game,
+                    os.path.split(os.path.abspath(self.etc.game))[1].lower())
+            else:
+                pathdir = self.etc.game
+            path = os.path.split(os.path.abspath(pathdir))
+            sys.path.append(path[0])
+            module_name = path[1]
             if module_name == '':
                 module_name = self.etc.game
         else:
             module_name = self.etc.game
-
         fgame = __import__(module_name + '.game', globals(), locals(),
                            ['Game'], -1)
         self.game = fgame.Game(self)
