@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
-##[ Name        ]## convertlinkedplacestootherinternalformat
+##[ Name        ]## convert-linked-places-file-to-a-simpler-format
 ##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
 ##[ Description ]## Converts files created with link-places to the
                   # simpler internal format used by Dililatum
@@ -78,8 +78,8 @@ def convert_from_internal_to_other_internal(path):
                                         target[1][1])
             else:
                 out += '||'
-            out += '%d,%d %d,%d|%s\n' % (r[0][0], r[0][1], r[1][0],
-                                       r[1][1], r[3])
+            out += '%d,%d %d,%d|%s\n' % (r[0][0], r[0][1], r[0][0] + r[1][0],
+                                         r[0][1] + r[1][1], r[3])
         out += '\n'
         i += 1
 

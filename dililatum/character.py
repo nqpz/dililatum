@@ -31,7 +31,7 @@ from pygame.locals import *
 
 class Frame:
     def __init__(self, img):
-        self.surf = img.convert_alpha()
+        self.surf = img
         self.width = img.get_width()
         self.height = img.get_height()
 
@@ -70,22 +70,26 @@ class Character:
         ))
         self.use_shadow = get('shadow', True)
         self.shadow_details = get('shadowdetails', {})
+        self.default_direction = 'cb'
         self.default_position = (
-            self.world.size[0] / 2.2,
-            self.world.size[1] * 0.9)
+            self.world.size[0] / 2,
+            int(self.world.size[1] * 0.9))
         self.original_position = get('position', self.default_position[:])
         self.position = self.position[:]
         self.modified_position = self.position[:]
-        self.visible = True
+        self.visible = get('visible', True)
 
         self.create()
         if self.use_shadow:
             self.create_shadow()
 
+    def get_bottom_area(self):
+        return self.modified_position[0] + self.get_size(self.position)[0] / 2, self.modified_position[1]
+
     def convert_files_to_surfaces(self, *files):
         frames = []
         for f in files:
-            img = pygame.image.load(f)
+            img = self.world.load_image(f, True)
             frames.append(Frame(img))
         return frames
 
@@ -96,6 +100,10 @@ class Character:
                 files = [os.path.join(self.data[0], x, t) for t in files]
                 self.frames[x] = \
                     self.convert_files_to_surfaces(*files)
+
+        if len(self.frames) < 8:
+            self.fill_out_remaining_directions()
+
         maxw = 0
         maxh = 0
         for x in self.frames.values():
@@ -105,6 +113,38 @@ class Character:
                 if y.height > maxh:
                     maxh = y.height
         self.maxsize = (maxw, maxh)
+        try:
+            self.head = \
+                self.world.load_image(self.data[1]['.'][1]['head.png'])
+        except Exception:
+            self.head = None
+
+    def fill_out_remaining_directions(self):
+        tries = {
+            'lt': ('ct', 'lm', 'rt', 'lb', 'rm', 'cb', 'rb'),
+            'rt': ('ct', 'rm', 'lt', 'rb', 'lm', 'cb', 'lb'),
+            'ct': ('lt', 'rt', 'lm', 'rm', 'lb', 'rb', 'cb'),
+            'cb': ('lb', 'rb', 'lm', 'rm', 'lt', 'rt', 'ct'),
+            'lm': ('lt', 'lb', 'ct', 'cb', 'rt', 'rb', 'rm'),
+            'rm': ('rt', 'rb', 'ct', 'cb', 'lt', 'lb', 'lm'),
+            'lb': ('cb', 'lm', 'rb', 'lt', 'rm', 'ct', 'rt'),
+            'rb': ('cb', 'rm', 'lb', 'rt', 'lm', 'ct', 'lt')
+            }
+        for x in 'lt', 'ct', 'rt', 'lm', 'rm', 'lb', 'cb', 'rb':
+            if x not in self.frames:
+                ok = False
+                i = 0
+                while not ok:
+                    try:
+                        self.frames[x] = self.frames[tries[x][i]]
+                        ok = True
+                        break
+                    except Exception:
+                        if i == 7:
+                            break
+                        i += 1
+                if not ok:
+                    self.frames[x] = None
 
     def create_shadow(self):
         charsurf = self.frames['cb'][0]
@@ -151,21 +191,21 @@ class Character:
             or (a == 'lb' and b == 'rt') \
             or (a == 'rb' and b == 'lt')
 
-    def walk(self, direction, screen_limits=True, scale=1.0):
+    def walk(self, direction):
         w, h, resize = self.get_size(self.position)
         size = w, h
         maxsize = [s * resize for s in self.maxsize]
         mov = self.movement[direction]
         pos = self.position
         pos_ok = False
-        origscale = scale
+        scale = 1.0
 
         while not pos_ok:
             npos = [int(pos[i] + mov[i] * resize * scale *
                         self.world.size[i] / 100.0) for i in range(2)]
             mpos = self.world.current_place.char_pos(npos)
-            pos_ok = self.world.current_place.pos_ok(mpos, maxsize,
-                                                     screen_limits)
+            pos_ok = self.world.current_place.pos_ok(mpos, maxsize)
+
             scale -= .1
             if scale < 0.4:
                 break
@@ -209,6 +249,6 @@ class Character:
             ssize = [int(s * r) for s in self.shadow_size]
             shad = pygame.transform.smoothscale(
                 self.shadow, ssize)
-            shad_pos = (pos[0] + (w - ssize[0]) / 2, pos[1] - h / 15)
+            shad_pos = (pos[0] - w / 2 + (w - ssize[0]) / 2, pos[1] - h / 15)
             surf.blit(shad, shad_pos)
-        surf.blit(img, (pos[0], pos[1] - h))
+        surf.blit(img, (pos[0] - w / 2, pos[1] - h))

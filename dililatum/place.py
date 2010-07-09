@@ -79,31 +79,23 @@ class Place:
     def char_pos(self, pos):
         return pos
 
-    def pos_ok(self, pos, size, screen_limits=True):
-        if screen_limits and \
-                pos[0] < -20 or pos[0] + size[0] + 20 > self.world.size[0] \
-                or pos[1] - size[1] / 20 < -20 or pos[1] > \
-                self.world.size[1] + 20:
-            return False
-
+    def pos_ok(self, pos, size):
         if self.posoks is None:
             self.load_posfile()
-
         if self.posoks is None: # Still..
             return True
         else:
             height = self.char_size(pos) * \
                 self.world.leading_character.get_frame().height / 20
-            pos2 = pos[0] + size[0]
+            s0 = size[0] / 2
             posmh = pos[1] - height
-            a2 = (pos[1] + posmh) / 2
             return self.posoks.get(*pos) and \
-                self.posoks.get(pos2, pos[1]) and \
+                self.posoks.get(pos[0] - s0, pos[1]) and \
+                self.posoks.get(pos[0] + s0, pos[1]) and \
                 self.posoks.get(pos[0], posmh) and \
-                self.posoks.get(pos2, posmh) and \
-                self.posoks.get(pos[0] + size[0] / 2, a2) and \
-                self.posoks.get(pos[0] + size[0] / 4, a2) and \
-                self.posoks.get(pos[0] + size[0] - size[0] / 4, a2)
+                self.posoks.get(pos[0] - s0, posmh) and \
+                self.posoks.get(pos[0] + s0, posmh) and \
+                self.posoks.get(pos[0], (pos[1] + posmh) / 2)
 
     def draw(self, surf=None):
         if surf is None:

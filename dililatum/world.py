@@ -31,6 +31,7 @@ from dililatum.character import Character, EmptyCharacter
 from dililatum.object import Object
 from dililatum.place import Place
 from dililatum.font import Font
+from dililatum.sound import Sound
 from dililatum.statusprinter import StatusPrinter
 
 microseconds = lambda tdelta: tdelta.microseconds
@@ -71,8 +72,10 @@ class World:
             except KeyError: return default
         self.sys = stm
         self.size = size
-        self.real_size = tuple(self.size)
+        self.real_size = tuple(self.size[:])
+        self.loaded_images = {}
         self.objects = []
+        self.sounds = []
         self.characters = []
         self.leading_character = EmptyCharacter()
         self.leading_character_direction = None
@@ -102,6 +105,8 @@ class World:
 
         self.counters.append(TimeCounter(self.walking_speed, self.check_lead_walk))
 
+        pygame.mixer.pre_init(44100) # Sound files must be resampled
+                                     # to use this
         pygame.init()
         self.create_screen()
         self.fill_background((0, 0, 0))
@@ -109,6 +114,18 @@ class World:
 
         self.innerclock = pygame.time.Clock()
         self.sys.emit_signal('afterworldstart', self)
+
+    def load_image(self, path, alpha=False):
+        p = os.path.abspath(path)
+        if p not in self.world.loaded_images.values():
+            img = pygame.image.load(f)
+            if alpha:
+                img = img.convert_alpha()
+            else:
+                img = img.convert()
+            self.world.loaded_images.append(p)
+        else:
+            img = self.world.loaded_images[p]
 
     def create_screen(self):
         self.screen_bars = [None, None]
@@ -328,6 +345,12 @@ class World:
                     return True
             return False
 
+    def create_sound(self, path):
+        return Sound(self, path)
+
+    def add_sound(self, snd):
+        self.sounds.append(snd)
+
     def create_object(self, *args, **oargs):
         self.sys.emit_signal('beforeobjectcreate', self)
         args = list(args)
@@ -357,16 +380,34 @@ class World:
                 self.current_place = self.places[place]
             except IndexError:
                 pass
+        if self.leading_character is None:
+            return
+
         if npos is None:
             npos = self.leading_character.default_position
+        npos = npos[:]
+        if npos[0] < 0:
+            npos[0] = int(
+                self.size[0] + npos[0] -
+                place.char_size(npos) *
+                self.leading_character.maxsize[0]
+            )
         self.leading_character.stop()
-        self.leading_character.original_position = npos
-        self.leading_character.position = npos[:]
-        self.leading_character.modified_position = npos[:]
+
         if direction is not None:
+            if direction[0] == 'l':
+                npos[0] = int(npos[0] - (place.char_size(npos) / 2) *
+                              self.leading_character.maxsize[0])
+            elif direction[0] == 'r':
+                npos[0] = int(npos[0] + (place.char_size(npos) / 2) *
+                              self.leading_character.maxsize[0])
             self.leading_character.original_direction = direction
             self.leading_character.direction = direction
             self.leading_character_direction = direction
+        self.leading_character.original_position = npos
+        self.leading_character.position = npos[:]
+        self.leading_character.modified_position = npos[:]
+
 
     def get_center(self):
         return [x / 2 for x in self.size]
@@ -374,11 +415,14 @@ class World:
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
         self.current_place.draw()
-        for char in self.characters:
-            char.draw()
-        for obj in self.current_place.objects:
-            obj.draw()
 
+        objs = self.characters[:]
+        objs.extend(self.current_place.objects)
+        objs.extend(self.objects)
+        objs.sort(key=lambda o: o.get_bottom_area()[1])
+        for x in objs:
+            if x.visible:
+                x.draw()
 
         if self.screen_bars[0] is not None:
             self.screen.blit(self.screen_bars[0], (0, 0))

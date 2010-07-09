@@ -59,9 +59,21 @@ class Object:
             self.surf = None
         self.walkonact = get('walkonact', True)
 
+
+    def get_bottom_area(self):
+        if self.surf is None: self.load_image()
+        try:
+            if self.rel == 0:
+                return [a[1] + 0 for a in self.area]
+            else:
+                return [self.world.current_place.char_pos(self.area[1])[i]
+                        + 0 for i in range(2)]
+        except Exception:
+            return 0, 0
+
     def load_image(self):
         if self.imgfile is None: return
-        self.surf = pygame.image.load(self.imgfile).convert_alpha()
+        self.surf = self.world.load_image(self.imgfile, True)
         self.size = self.surf.get_size()
         for i in range(2):
             if self.area[0][i] is None:
@@ -96,11 +108,12 @@ class Object:
 
         return retval
 
-    def feet_in_obj_check(self, spos, ssize, cpos, csize):
-        pos1 = [cpos[0], cpos[1] - csize[1] / 15]
-        pos2 = [cpos[0] + csize[0], cpos[1]]
+    def feet_in_obj_check(self, spos, spos2, cpos, csize):
+        pos1 = [cpos[0] - csize[0] / 2, cpos[1] - csize[1] / 20]
+        pos2 = [cpos[0] + csize[0] / 2, cpos[1]]
         xos1 = spos
-        xos2 = [spos[i] + ssize[i] for i in range(2)]
+        xos2 = spos2
+
         return pos1[0] < xos2[0] and pos2[0] > xos1[0] and \
             pos1[1] < xos2[1] and pos2[1] > xos1[1]
 

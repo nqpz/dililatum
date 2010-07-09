@@ -69,6 +69,12 @@ class GenericGame:
     def run_game(self):
         pass
 
+    def load_sound(self, path, add=True):
+        snd = self.world.create_sound(path)
+        if add:
+            self.world.add_sound(snd)
+        return snd
+
     def load_places(self, imgpath, posokpath, objspath, num=None):
         if num is None:
             num = min(
@@ -138,9 +144,9 @@ class GenericGame:
                 ovobjs[i] = self.world.create_object(
                     rel=c[2], pos=c[1], area=(c[3], c[4]),
                     imgfile=os.path.join(objspath, c[0]),
-                    visible=False)
-                ovobjs[i].action = [ovobjs[i].show]
-                ovobjs[i].unaction = [ovobjs[i].hide]
+                    )
+                #ovobjs[i].action = [ovobjs[i].show]
+                #ovobjs[i].unaction = [ovobjs[i].hide]
                 place.add_object(ovobjs[i])
                 place.obj_names[c[5]] = ovobjs[i]
             self.world.add_place(place)
@@ -197,7 +203,7 @@ class GenericGame:
 
         return info
 
-    def use_map_data(self, data, fix_poss=True):
+    def use_map_data(self, data):
         places = self.world.places
         i = 0
         for x in data:
@@ -216,8 +222,6 @@ class GenericGame:
                     places[i].set_direction_object(key, obj)
             i += 1
 
-        if fix_poss:
-            self.fix_places_with_minus_x_positions()
         self.sys.emit_signal('aftermapload', self)
 
     def fix_places_with_minus_x_positions(self):
@@ -246,6 +250,13 @@ class GenericGame:
                         o.action[1].char_size(targetpos) / 2 *
                         self.world.leading_character.get_frame().width
                     )
+
+    def load_character(self, name, add=True):
+        char = self.world.create_character(
+            name, self.get_path_data(name))
+        if add:
+            self.world.add_character(char)
+        return char
 
     def load(self):
         pass
