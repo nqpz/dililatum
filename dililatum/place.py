@@ -40,6 +40,7 @@ class Place:
         self.objects = get('objs', [])
         self.obj_names = {}
         self.dir_objects = {}
+        self.bgsounds = get('bgsnd', [])
 
         if self.world.sys.etc.loadwait:
             self.load_imgfile()

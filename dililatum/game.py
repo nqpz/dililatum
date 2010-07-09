@@ -29,6 +29,22 @@ from dililatum.world import World
 from dililatum.statusprinter import StatusPrinter
 from dililatum.various import *
 
+class SearchDict(dict):
+    def __getitem__(self, key):
+        p = []
+        for k, v in self.items():
+            if k.find(key) != -1:
+                p.append(v)
+        if len(p) == 0:
+            return None
+        elif len(p) == 1:
+            return p[0]
+        else:
+            return p
+
+    def precise_get(self, key):
+        return dict.__getitem__(self, key)
+
 class GenericGame:
     name = 'A game'
     shortname = 'game'
@@ -69,6 +85,14 @@ class GenericGame:
     def run_game(self):
         pass
 
+    def load_sounds(self, dirpath, add=True):
+        snds = SearchDict()
+        f = self.get_path_data(dirpath)[1]['.'][1]
+        for x in f:
+            snd = self.load_sound(os.path.join(dirpath, x), add)
+            snds[x] = snd
+        return snds
+
     def load_sound(self, path, add=True):
         snd = self.world.create_sound(path)
         if add:
@@ -76,6 +100,9 @@ class GenericGame:
         return snd
 
     def load_places(self, imgpath, posokpath, objspath, num=None):
+        imgpath = os.path.normpath(imgpath)
+        posokpath = os.path.normpath(posokpath)
+        objspath = os.path.normpath(objspath)
         if num is None:
             num = min(
                 len(self.get_path_data(imgpath)[1]['.'][1]),
@@ -257,6 +284,11 @@ class GenericGame:
         if add:
             self.world.add_character(char)
         return char
+
+    def load_msgbox(self, **oargs):
+        msgbox = self.world.create_msgbox(**oargs)
+        self.world.add_msgbox(msgbox)
+        return msgbox
 
     def load(self):
         pass

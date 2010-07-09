@@ -113,9 +113,11 @@ class Character:
                 if y.height > maxh:
                     maxh = y.height
         self.maxsize = (maxw, maxh)
+
         try:
             self.head = \
-                self.world.load_image(self.data[1]['.'][1]['head.png'])
+                self.world.load_image(os.path.join(self.data[0],
+                                                   'head.png'), True)
         except Exception:
             self.head = None
 
@@ -229,6 +231,11 @@ class Character:
         w, h, resize = self.get_size(self.modified_position)
         for o in self.world.current_place.objects:
             o.check_if_action_needed(self.position, (w, h))
+
+    def say(self, msg, msgbox=None):
+        if msgbox is None:
+            msgbox = self.world.default_msgbox
+        msgbox.show(self.head, msg)
 
     def hide(self):
         self.visible = False

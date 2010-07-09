@@ -77,7 +77,10 @@ parser.add_option('-B', '--nodoublebuf', dest='doublebuf',
                   help='do not attempt to use double buffering (faster but perhaps uglier)')
 parser.add_option('-w', '--wait-for-complete-loading', dest='loadwait',
                   action='store_true', default=False,
-                  help='do not autoload data as needed -- load it all at startup instead')
+                  help='do not autoload data as needed -- load it all at startup instead (not recommended)')
+parser.add_option('-m', '--mute', dest='mute',
+                  action='store_true', default=False,
+                  help='do not play sound and music (not recommended)')
 parser.add_option('-q', '--quiet', dest='verbose',
                   action='store_false', default=True,
                   help='don\'t print status messages')
@@ -112,7 +115,9 @@ if options.colorerrors:
 try:
     options.game = args[0]
 except IndexError:
-    parser.error('no GAME has been specified, quitting.', False)
+    parser.error('no GAME has been specified, trying to load from \
+current directory.')
+    options.game = '.'
 
 if options.size is not None:
     try:

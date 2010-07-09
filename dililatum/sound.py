@@ -27,7 +27,7 @@
 import pygame
 from pygame.locals import *
 
-class Sound(pygame.mixer.Sound):
+class Sound:
     def __init__(self, world, path):
         self.world = world
         self.path = path
@@ -35,18 +35,22 @@ class Sound(pygame.mixer.Sound):
         if self.world.sys.etc.loadwait:
             self.load_sound()
         else:
-            self.loaded = False
+            self.snd = None
 
     def load_sound(self):
-        pygame.mixer.Sound.__init__(self, self.path)
-        self.loaded = True
+        self.snd = pygame.mixer.Sound(self.path)
 
     def play(self):
-        if not self.loaded:
+        if self.world.sys.etc.mute: return
+        self.world.sys.emit_signal('beforesoundplay', self, self.snd)
+        if self.snd is None:
             self.load_sound()
-        pygame.mixer.Sound.play(self)
+        self.snd.play(-1) # Looping indefinitely
         self.is_playing = True
+        self.world.sys.emit_signal('aftersoundplay', self, self.snd)
 
     def stop(self):
-        pygame.mixer.Sound.stop(self)
+        self.world.sys.emit_signal('beforesoundstop', self, self.snd)
+        self.snd.stop()
         self.is_playing = False
+        self.world.sys.emit_signal('aftersoundstop', self, self.snd)

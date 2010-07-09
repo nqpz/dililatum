@@ -25,6 +25,7 @@
                   # output as well as key detection
 
 from datetime import datetime
+import os.path
 import pygame
 from pygame.locals import *
 from dililatum.character import Character, EmptyCharacter
@@ -32,7 +33,9 @@ from dililatum.object import Object
 from dililatum.place import Place
 from dililatum.font import Font
 from dililatum.sound import Sound
+from dililatum.msgbox import MessageBox
 from dililatum.statusprinter import StatusPrinter
+from dililatum.various import thread
 
 microseconds = lambda tdelta: tdelta.microseconds
 class TimeCounter:
@@ -82,6 +85,8 @@ class World:
         self.character_moving_keys = get('charkeys',
                                          self.default_character_moving_keys)
         self.walking_speed = get('walkspeed', Duration(100))
+        self.msgboxes = []
+        self.default_msgbox = None
         self.counters = []
         self.places = []
         self.current_place = None
@@ -117,15 +122,16 @@ class World:
 
     def load_image(self, path, alpha=False):
         p = os.path.abspath(path)
-        if p not in self.world.loaded_images.values():
-            img = pygame.image.load(f)
+        if p not in self.loaded_images.values():
+            img = pygame.image.load(p)
             if alpha:
                 img = img.convert_alpha()
             else:
                 img = img.convert()
-            self.world.loaded_images.append(p)
+            self.loaded_images[p] = img
         else:
-            img = self.world.loaded_images[p]
+            img = self.loaded_images[p]
+        return img
 
     def create_screen(self):
         self.screen_bars = [None, None]
@@ -221,24 +227,21 @@ class World:
         pygame.display.set_icon(surf)
 
     def load_icon(self, path):
-        self.set_icon(pygame.image.load(path).convert_alpha())
+        self.set_icon(self.load_image(path, True))
 
-    def blit(self, surf, pos=(0, 0)):
+    def blit(self, surf, pos=(0, 0), area=None):
         if surf is None: return
         surf = pygame.transform.smoothscale(
             surf, [int(x * self.sys.etc.zoom)
                    for x in surf.get_size()])
-        self.screen.blit(surf, [self.screen_offset[i] + pos[i] * self.sys.etc.zoom for i in range(2)])
+        if area is not None:
+            area.width *= self.sys.etc.zoom
+            area.height *= self.sys.etc.zoom
+        self.screen.blit(surf, [self.screen_offset[i] + pos[i] *
+                                self.sys.etc.zoom for i in range(2)], area)
 
     def flip(self):
         pygame.display.flip()
-
-    def load_image(self, path, alpha=True):
-        img = pygame.image.load(path)
-        if alpha:
-            return img.convert_alpha()
-        else:
-            return img.convert()
 
     def create_font(self, **oargs):
         return Font(self, **oargs)
@@ -257,6 +260,17 @@ class World:
         if self.running:
             counter.start()
         self.sys.emit_signal('aftercharacteradd', char)
+
+    def create_msgbox(self, **oargs):
+        self.sys.emit_signal('beforemsgboxcreate', self, oargs)
+        msgbox = MessageBox(self, **oargs)
+        self.sys.emit_signal('aftermsgboxcreate', msgbox)
+        return msgbox
+
+    def add_msgbox(self, msgbox):
+        self.sys.emit_signal('beforemsgboxadd', msgbox)
+        self.msgboxes.append(msgbox)
+        self.sys.emit_signal('aftermsgboxadd', msgbox)
 
     def set_leading_character(self, char):
         self.leading_character = char
@@ -346,10 +360,15 @@ class World:
             return False
 
     def create_sound(self, path):
-        return Sound(self, path)
+        self.sys.emit_signal('beforesoundcreate', self, path)
+        snd = Sound(self, path)
+        self.sys.emit_signal('aftersoundcreate', self, snd)
+        return snd
 
     def add_sound(self, snd):
+        self.sys.emit_signal('beforesoundadd', self, snd)
         self.sounds.append(snd)
+        self.sys.emit_signal('aftersoundadd', self, snd)
 
     def create_object(self, *args, **oargs):
         self.sys.emit_signal('beforeobjectcreate', self)
@@ -373,6 +392,10 @@ class World:
         self.sys.emit_signal('afterplaceadd', place)
 
     def set_place(self, place, npos=None, direction=None):
+        try:
+            curbgsnds = self.current_place.bgsounds
+        except Exception:
+            curbgsnds = []
         if 'draw' in dir(place):
             self.current_place = place
         else:
@@ -408,9 +431,19 @@ class World:
         self.leading_character.position = npos[:]
         self.leading_character.modified_position = npos[:]
 
+        newbgsnds = self.current_place.bgsounds
+        for x in curbgsnds:
+            if x not in newbgsnds:
+                x.stop()
+        for x in newbgsnds:
+            if not x.is_playing:
+                thread(x.play)
 
     def get_center(self):
         return [x / 2 for x in self.size]
+
+    def set_default_msgbox(self, msgbox):
+        self.default_msgbox = msgbox
 
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
@@ -423,6 +456,9 @@ class World:
         for x in objs:
             if x.visible:
                 x.draw()
+
+        for x in self.msgboxes:
+            x.draw()
 
         if self.screen_bars[0] is not None:
             self.screen.blit(self.screen_bars[0], (0, 0))
