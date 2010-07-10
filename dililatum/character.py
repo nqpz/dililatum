@@ -28,6 +28,7 @@ from datetime import datetime
 import os.path
 import pygame
 from pygame.locals import *
+from dililatum.msgbox import MessageContainer
 
 class Frame:
     def __init__(self, img):
@@ -48,7 +49,7 @@ class Character:
             try: return oargs[key]
             except KeyError: return default
         self.id = idname
-        self.name = None
+        self.name = get('name', None)
         self.world = world
         self.data = datafiles
         self.frames = {}
@@ -224,6 +225,10 @@ class Character:
         else:
             self.stop()
 
+    def set_position(self, pos):
+        self.position = pos
+        self.modified_position = self.world.current_place.char_pos(pos)
+
     def reset_position(self):
         self.position = self.original_position[:]
         self.modified_position = self.original_position[:]
@@ -232,10 +237,12 @@ class Character:
         for o in self.world.current_place.objects:
             o.check_if_action_needed(self.position, (w, h))
 
-    def say(self, msg, msgbox=None):
+    def say(self, msg, msgbox=None, pos=None, **oargs):
         if msgbox is None:
             msgbox = self.world.default_msgbox
-        msgbox.show(self.head, msg)
+        if self.name is not None:
+            msg = self.name + ': ' + msg
+        MessageContainer(msgbox).show(self.head, msg, pos, **oargs)
 
     def hide(self):
         self.visible = False

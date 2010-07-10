@@ -278,9 +278,9 @@ class GenericGame:
                         self.world.leading_character.get_frame().width
                     )
 
-    def load_character(self, name, add=True):
+    def load_character(self, path, add=True, **oargs):
         char = self.world.create_character(
-            name, self.get_path_data(name))
+            path, self.get_path_data(path), **oargs)
         if add:
             self.world.add_character(char)
         return char

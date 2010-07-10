@@ -26,6 +26,7 @@
 
 import pygame
 from pygame.locals import *
+import math
 
 class Font:
     def __init__(self, world, **oargs):
@@ -42,5 +43,48 @@ class Font:
     def create_font(self):
         self.font = pygame.font.Font(self.path, self.size)
 
-    def write(self, text, color=(0, 0, 0)):
-        return self.font.render(text, True, color)
+    def write(self, text, **oargs):
+        color = oargs.get('color') or (0, 0, 0)
+        split = oargs.get('split') or False
+        antialias = oargs.get('antialias') or True
+        if not split:
+            return self.font.render(text, antialias, color)
+        else:
+            t = text[:]
+            w = split[0]
+            ts = []
+            while t:
+                tt = t[:]
+                s = False
+                while self.font.size(tt)[0] > w:
+                    nf = tt.rfind(' ')
+                    if nf != -1:
+                        tt = tt[:nf]
+                        s = True
+                    else:
+                        tt = tt[:-1]
+                        s = False
+                ts.append(tt)
+                if s:
+                    t = t[len(tt) + 1:]
+                else:
+                    t = t[len(tt):]
+
+            fh = self.font.size('')[1]
+            rows_p_t = int(split[1] / fh)
+            rows = len(ts)
+            surfs = []
+            tslen = len(ts)
+
+            for i in range(int(math.ceil(float(rows) / rows_p_t))):
+                surf = pygame.Surface(split).convert_alpha()
+                surf.fill(pygame.Color(0, 0, 0, 0))
+                for j in range(rows_p_t):
+                    n = i * rows_p_t + j
+                    if n >= tslen:
+                        break
+                    surf.blit(self.font.render(ts[n],
+                                               antialias, color),
+                              (0, fh * j))
+                surfs.append(surf)
+            return surfs

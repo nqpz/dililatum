@@ -94,6 +94,7 @@ class World:
         self.quitting = False
         self.status = StatusPrinter('WORLD', self.sys.etc, 'cyan', 'blue')
         self.link_event = self.sys.gameactions.add
+        self.unlink_event = self.sys.gameactions.remove
         self.keys_down = []
         self.screen_offset = [0, 0]
         self.screen_bars = [None, None]
