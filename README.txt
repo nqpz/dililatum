@@ -18,26 +18,40 @@ like this:
 Dependencies
 ============
 
-Dililatum depends on the following programs/libraries:
+Dililatum depends on the following programs/libraries::
 
-* Python 2.5+
-# Dililatum is written in Python
-: <http://python.org/>
-> Debian etc.: apt-get install python
-  Fedora etc.: yum install python
+  * Python 2.5+
+  # Dililatum is written in Python
+  : <http://python.org/>
+  > Debian etc.: apt-get install python
+    Fedora etc.: yum install python
 
-* PyGame 1.80+
-# Dililatum uses PyGame for its graphics and sound
-: <http://python.org/>
->  Debian etc.: apt-get install python-pygame
-   Fedora etc.: yum install pygame
+  * PyGame 1.80+
+  # Dililatum uses PyGame for its graphics and sound
+  : <http://python.org/>
+  > Debian etc.: apt-get install python-pygame
+    Fedora etc.: yum install pygame
 
-* NumPy
-# Dililatum uses NumPy for internal arrays describing
-  where it's okay to walk -- and where it's not ok.
-: <http://numpy.scipy.org/>
-> Debian etc.: apt-get install python-numpy
-  Fedora etc.: yum install python-numpy
+  * NumPy
+  # Dililatum uses NumPy for internal arrays describing
+    where it's okay to walk -- and where it's not ok.
+  : <http://numpy.scipy.org/>
+  > Debian etc.: apt-get install python-numpy
+    Fedora etc.: yum install python-numpy
+
+Optional modules
+----------------
+
+Additionally, you can also install these libraries::
+  * setproctitle
+  # Changes 'python' to 'dililatum'
+  : <http://pypi.python.org/pypi/setproctitle/>
+  > sudo easy_install setproctitle
+
+  * termcolor
+  # Colors Dililatum's terminal output
+  : <http://pypi.python.org/pypi/termcolor>
+  > sudo easy_install termcolor
 
 
 Details
@@ -52,6 +66,15 @@ For an example of what Dililatum is capable of, try downloading
 ForestQuest. It's available at
 http://metanohi.org/projects/forestquest/. It's still a work in
 progress, but it works.
+
+The logo of Dililatum, found in the "logo" directory, is available
+under the terms of the Creative Commons Attribution-ShareAlike 3.0 (or
+any later version) Unported license. A copy of this license is
+available at http://creativecommons.org/licenses/by-sa/3.0/
+
+
+Installing
+==========
 
 To install Dililatum, write this in a terminal::
 

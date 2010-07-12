@@ -5,6 +5,7 @@ ginfo_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                           'dililatum', 'generalinformation.py')
 execfile(ginfo_file) # Gives us a version and a version_text variables
 bins = [x[2] for x in os.walk('bin')][0]
+bins = [os.path.join('bin', x) for x in bins]
 
 setup(
     name='Dililatum',

@@ -1,2 +1,6 @@
 include *.txt
-recursive-include docs *.txt
+include bin/*
+include devshellscripts/*
+include debugtests/*
+include logo/*
+recursive-include docs *

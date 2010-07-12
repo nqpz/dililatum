@@ -106,7 +106,7 @@ if options.colorerrors:
     try:
         from termcolor import colored
     except ImportError:
-        colored = lambda x: x
+        colored = lambda x, *y: x
     class ColoredErrors:
         def write(self, msg):
             sys.__stderr__.write(colored(msg, 'red'))

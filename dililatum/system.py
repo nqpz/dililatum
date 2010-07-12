@@ -133,16 +133,25 @@ There is NO WARRANTY, to the extent permitted by law. See
             else:
                 pathdir = self.etc.game
             path = os.path.split(os.path.abspath(pathdir))
-            sys.path.append(path[0])
+            sys.path.insert(0, path[0])
             module_name = path[1]
             if module_name == '':
                 module_name = self.etc.game
         else:
             module_name = self.etc.game
+
         fgame = __import__(module_name + '.game', globals(), locals(),
                            ['Game'], -1)
         self.game = fgame.Game(self)
-        os.chdir(os.path.join(os.path.dirname(fgame.__file__), self.game.datadir))
+        paths = []
+        paths.append(os.path.join(os.path.dirname(fgame.__file__),
+                                  self.game.datadir))
+        paths.append('/usr/local/share/forestquest/data')
+        paths.append('/usr/share/forestquest/data')
+        for x in paths:
+            if os.path.isdir(x):
+                os.chdir(x)
+                break
         self.status(
             'Name of game is: %s' % self.game.name + '\n' +
             'Size of game is: %dx%d' % tuple(self.game.size))
