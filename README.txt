@@ -20,38 +20,39 @@ Dependencies
 
 Dililatum depends on the following programs/libraries::
 
-  * Python 2.5+
-  # Dililatum is written in Python
-  : <http://python.org/>
-  > Debian etc.: apt-get install python
+    Python 2.5+
+    Dililatum is written in Python
+    <http://python.org/>
+    Debian etc.: apt-get install python
     Fedora etc.: yum install python
 
-  * PyGame 1.80+
-  # Dililatum uses PyGame for its graphics and sound
-  : <http://python.org/>
-  > Debian etc.: apt-get install python-pygame
+    PyGame 1.8.1+
+    Dililatum uses PyGame for its graphics and sound
+    <http://python.org/>
+    Debian etc.: apt-get install python-pygame
     Fedora etc.: yum install pygame
 
-  * NumPy
-  # Dililatum uses NumPy for internal arrays describing
+    NumPy
+    Dililatum uses NumPy for internal arrays describing
     where it's okay to walk -- and where it's not ok.
-  : <http://numpy.scipy.org/>
-  > Debian etc.: apt-get install python-numpy
+    <http://numpy.scipy.org/>
+    Debian etc.: apt-get install python-numpy
     Fedora etc.: yum install python-numpy
 
 Optional modules
 ----------------
 
 Additionally, you can also install these libraries::
-  * setproctitle
-  # Changes 'python' to 'dililatum'
-  : <http://pypi.python.org/pypi/setproctitle/>
-  > sudo easy_install setproctitle
 
-  * termcolor
-  # Colors Dililatum's terminal output
-  : <http://pypi.python.org/pypi/termcolor>
-  > sudo easy_install termcolor
+    setproctitle
+    Changes 'python' to 'dililatum'
+    <http://pypi.python.org/pypi/setproctitle/>
+    sudo easy_install setproctitle
+
+    termcolor
+    Colors Dililatum's terminal output
+    <http://pypi.python.org/pypi/termcolor>
+    sudo easy_install termcolor
 
 
 Details
