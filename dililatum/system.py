@@ -58,7 +58,7 @@ class SignalDict(dict):
 
     def run(self, signal, obj):
         try:
-            for func in self.__getitem__(signal):
+            for func in self.__getitem__(signal)[:]:
                 try:
                     obj.uargs = func[1:]
                 except Exception:
@@ -67,6 +67,8 @@ class SignalDict(dict):
         except KeyError:
             pass
 
+    def clear(self, signal):
+        self.__setitem__(signal, [])
 
 class System:
     def __init__(self, etc, error=None):

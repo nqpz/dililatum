@@ -37,7 +37,7 @@ class MessageBox:
             except KeyError: return default
 
         self.world = world
-        self.path = get('bgimg', None)
+        self.path = get('path', None)
         self.font = get('font', None)
         self.default_pos = get('pos', None)
         self.headtextrel = get('headtextrel', 0)
@@ -48,14 +48,27 @@ class MessageBox:
         # 3: | TEXT... |
         #    |   HEAD  |
         self.size = get('size', (620, 120))
+        self.posize = get('posize', (10, 10))
         self.visible = False
 
         self.msgcontainers = []
 
         if self.path is not None:
-            self.surf = \
-                self.world.load_image(os.path.normpath(self.path), True)
-            self.size = self.surf.get_size()
+            try:
+                self.bgimg = \
+                    self.world.load_image(os.path.normpath(
+                        os.path.join(self.path, 'bgimg.png')), True)
+                self.size = self.bgimg.get_size()
+            except Exception:
+                self.bgimg = None
+            try:
+                self.poimg = \
+                    self.world.load_image(os.path.normpath(
+                        os.path.join(self.path, 'pointer.png')), True)
+                self.posize = self.poimg.get_size()
+            except Exception:
+                self.poimg = None
+
             if self.default_pos is None:
                 self.default_pos = ((self.world.size[0] - self.size[0]) / 2, 10)
             if self.headtextrel == 0:
@@ -63,8 +76,26 @@ class MessageBox:
                 self.textpos = (20 + HEADSIZE, 10)
                 self.textsize = (self.size[0] - 35 - HEADSIZE,
                                  self.size[1] - 20)
+            elif self.headtextrel == 1:
+                self.textpos = (10, 10)
+                self.textsize = (self.size[0] - 35 - HEADSIZE,
+                                 self.size[1] - 20)
+                self.headpos = (self.textpos[0] + self.textsize[0] +
+                                10, (self.size[1] - HEADSIZE) / 2)
+            elif self.headtextrel == 2:
+                self.headpos = ((self.size[0] - HEADSIZE) / 2, 10)
+                self.textpos = (10, 20 + HEADSIZE)
+                self.textsize = (self.size[0] - 20,
+                                 self.size[1] - 35 - HEADSIZE)
+            elif self.headtextrel == 3:
+                self.textpos = (10, 10)
+                self.textsize = (self.size[0] - 20,
+                                 self.size[1] - 35 - HEADSIZE)
+                self.headpos = ((self.size[0] - HEADSIZE) / 2,
+                                self.textpos[1] + self.textsize[1] + 10)
         else:
-            self.surf = None
+            self.bgimg = None
+            self.poimg = None
             if self.default_pos is None:
                 self.default_pos = (10, 10)
             self.headpos = (20, 20)
@@ -83,33 +114,89 @@ class MessageContainer:
 
         self.visible = False
 
-    def show(self, head=None, text=None, pos=None, **oargs):
-        self.msgbox.msgcontainers.append(self)
-        if head is not None:
-            self.head = head
+    # Messages
+    def show_message(self, text=None, **oargs):
+        self.head = oargs.get('head') or None
+        self.pos = oargs.get('pos') or self.msgbox.default_pos
+        self.temp_endaction = oargs.get('endaction') or None
         if text is not None:
             self.text = text
             self.textsurfs = self.msgbox.font.write(
                 text, split=self.msgbox.textsize)
-            self.textnum = 0
-            self.world.link_event(KEYDOWN, self.show_more_text)
-        if pos is not None:
-            self.pos = pos
-        else:
-            self.pos = self.msgbox.default_pos
-        self.temp_endaction = oargs.get('endaction') or None
+            self.surfnum = 0
+            self.world.lock_keys()
+            self.world.link_event(KEYDOWN,
+                                  self.show_more_message_text)
         if self.head or self.text:
+            self.msgbox.msgcontainers.append(self)
             self.visible = True
 
-    def show_more_text(self, event):
-        if event.key == K_RETURN or event.key == K_KP_ENTER or \
-                event.key == K_SPACE:
-            self.textnum += 1
-        if self.textnum == len(self.textsurfs):
+    def show_more_message_text(self, event):
+        if event.key in (K_RETURN, K_SPACE, K_KP_ENTER):
+            self.surfnum += 1
+        if self.surfnum == len(self.textsurfs):
             self.hide()
-            self.world.unlink_event(KEYDOWN, self.show_more_text)
-            self.temp_endaction()
+            self.world.unlink_event(KEYDOWN,
+                                    self.show_more_message_text)
+            self.world.unlock_keys()
+            if self.temp_endaction is not None:
+                self.temp_endaction[0](*self.temp_endaction[1:])
             del self.temp_endaction
+
+    # Questions with answers
+    def show_question(self, question=None, *answers, **oargs):
+        self.head = oargs.get('head') or None
+        posize = oargs.get('posize') or None
+        self.pointer = oargs.get('pointer') or None
+        self.pos = oargs.get('pos') or self.msgbox.default_pos
+        self.temp_endaction = oargs.get('endaction') or None
+        self.answers = answers
+        if question is not None:
+            self.text = question
+            self.textsurfs, self.pposs, self.surf_of_ans = self.msgbox.font.write(
+                self.text, split=self.msgbox.textsize,
+                indent_size=posize, indent_text=[a[0] for a in self.answers])
+            self.surfnum = 0
+            self.ansnum = 0
+            self.anslen = len(self.pposs)
+            self.surfnumstart, self.surfnumend = \
+                self.surf_of_ans[self.ansnum]
+            self.surfnum = self.surfnumstart
+            self.world.lock_keys()
+            self.world.link_event(KEYDOWN,
+                                  self.show_more_question_text)
+        if self.head or self.text:
+            self.msgbox.msgcontainers.append(self)
+            self.visible = True
+
+    def show_more_question_text(self, event):
+        if event.key in (K_DOWN,):
+            if self.surfnum < self.surfnumend:
+                self.surfnum += 1
+            elif self.ansnum < self.anslen - 1:
+                self.ansnum += 1
+                self.surfnumstart, self.surfnumend = \
+                    self.surf_of_ans[self.ansnum]
+                self.surfnum = self.surfnumstart
+        elif event.key in (K_UP,):
+            if self.surfnum > self.surfnumstart:
+                self.surfnum -= 1
+            elif self.ansnum > 0:
+                self.ansnum -= 1
+                self.surfnumstart, self.surfnumend = \
+                    self.surf_of_ans[self.ansnum]
+                self.surfnum = self.surfnumend
+
+        if event.key in (K_RETURN, K_SPACE, K_KP_ENTER):
+            self.hide()
+            self.world.unlink_event(KEYDOWN,
+                                    self.show_more_question_text)
+            self.world.unlock_keys()
+            if self.temp_endaction is not None:
+                self.temp_endaction[0](*self.temp_endaction[1:])
+            del self.temp_endaction
+            a = self.answers[self.ansnum]
+            a[1](*a[2:])
 
     def hide(self):
         self.msgbox.msgcontainers.remove(self)
@@ -118,8 +205,8 @@ class MessageContainer:
     def draw(self):
         if not self.visible: return
 
-        if self.msgbox.surf is not None:
-            self.world.blit(self.msgbox.surf, self.pos)
+        if self.msgbox.bgimg is not None:
+            self.world.blit(self.msgbox.bgimg, self.pos)
 
         if self.head is not None:
             self.world.blit(self.head,
@@ -128,8 +215,18 @@ class MessageContainer:
                              for i in range(2)])
 
         if self.text is not None:
-            surf = self.textsurfs[self.textnum]
-            pos = (self.msgbox.textpos[0] + self.pos[0],
-                   self.pos[1] + self.msgbox.textpos[1] +
-                   (self.msgbox.size[1] - surf.get_size()[1]) / 2)
+            surf = self.textsurfs[self.surfnum]
+            text_x = self.msgbox.textpos[0] + self.pos[0]
+            text_y = self.pos[1] + self.msgbox.textpos[1] + \
+                (self.msgbox.size[1] - surf.get_size()[1]) / 2
+            pos = (text_x, text_y)
             self.world.blit(surf, pos)
+
+            try:
+                if self.surfnum == self.surfnumstart:
+                    self.world.blit(
+                        self.pointer, (text_x, text_y +
+                                       self.pposs[self.ansnum][1]))
+            except AttributeError:
+                pass
+

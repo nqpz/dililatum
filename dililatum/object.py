@@ -35,10 +35,6 @@ class Object:
             except KeyError: return default
 
         self.world = world
-        self.type = get('type', 0)
-        ##### DIFFERENT TYPES #####
-        # 0: Simple overlay object, is always present, used for
-        # transparent objects linking places together
         self.rel = get('rel', 0) # 1 for real position, 0 for
                                  # modified (visible) position
         self.action = get('action', None)
@@ -47,6 +43,7 @@ class Object:
         self.pos = get('pos', (0, 0))
         self.size = get('size', None)
         self.area = get('area', None)
+        self.areaadd = get('areaadd', (0, 0))
         self.in_area = False
         if self.size is None and self.pos is not None and \
                 'append' in dir(self.pos[0]) and len(self.pos) > 1:
@@ -58,7 +55,11 @@ class Object:
         else:
             self.surf = None
         self.walkonact = get('walkonact', True)
-
+        self.require_event = get('require', None)
+        if self.require_event is not None:
+            self.world.link_event(self.require_event[0],
+                                  self.event_check)
+            self.close_to_touch = False
 
     def get_bottom_area(self):
         if self.surf is None: self.load_image()
@@ -75,15 +76,27 @@ class Object:
         if self.imgfile is None: return
         self.surf = self.world.load_image(self.imgfile, True)
         self.size = self.surf.get_size()
-        for i in range(2):
-            if self.area[0][i] is None:
-                self.area[0][i] = self.pos[i]
-            if self.area[1][i] is None:
-                self.area[1][i] = self.area[0][i] + self.size[i]
-            else:
-                self.area[1][i] -= self.area[0][i]
+        if self.area is None:
+            self.area = ([self.pos[i] + self.areaadd[i]
+                          for i in range(2)],
+                         [self.pos[i] + self.size[i]
+                          for i in range(2)])
+        else:
+            for i in range(2):
+                if self.area[0][i] is None:
+                    self.area[0][i] = self.pos[i]
+                if self.area[1][i] is None:
+                    self.area[1][i] = self.area[0][i] + self.size[i]
+                else:
+                    self.area[1][i] -= self.area[0][i]
 
-    def check_if_action_needed(self, pos, size, act_if_wanted=True):
+    def event_check(self, event):
+        if self.world.keys_locked:
+            return
+        if event.key == self.require_event[1] and self.close_to_touch:
+            self.actions(True)
+
+    def check_if_action_needed(self, pos, size):
         if self.surf is None: self.load_image()
         retval = True
 
@@ -92,21 +105,28 @@ class Object:
         else:
             npos = pos
 
-        if self.type == 0:
-            touch = self.feet_in_obj_check(self.area[0], self.area[1],
-                                           pos, size)
-            if touch:
-                retval = self.walkonact
+        touch = self.feet_in_obj_check(self.area[0], self.area[1],
+                                       pos, size)
+        self.close_to_touch = touch and self.require_event is not None
+        if touch:
+            retval = self.walkonact
 
-        if act_if_wanted:
-            if touch and not self.in_area:
-                self.in_area = True
-                self.do_action()
-            elif not touch and self.in_area:
-                self.in_area = False
-                self.do_unaction()
-
+        if self.require_event is None:
+            rtouch = touch
+        else:
+            rtouch = False
+        self.actions(rtouch)
         return retval
+
+    def actions(self, touch):
+        if touch and not self.in_area:
+            if self.require_event is None:
+                self.in_area = True
+            self.do_action()
+        elif not touch and self.in_area:
+            if self.require_event is None:
+                self.in_area = False
+            self.do_unaction()
 
     def feet_in_obj_check(self, spos, spos2, cpos, csize):
         pos1 = [cpos[0] - csize[0] / 2, cpos[1] - csize[1] / 20]

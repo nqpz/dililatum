@@ -28,7 +28,6 @@ from datetime import datetime
 import os.path
 import pygame
 from pygame.locals import *
-from dililatum.msgbox import MessageContainer
 
 class Frame:
     def __init__(self, img):
@@ -78,7 +77,7 @@ class Character:
         self.original_position = get('position', self.default_position[:])
         self.position = self.position[:]
         self.modified_position = self.position[:]
-        self.visible = get('visible', True)
+        self.visible = get('visible', False)
 
         self.create()
         if self.use_shadow:
@@ -237,12 +236,19 @@ class Character:
         for o in self.world.current_place.objects:
             o.check_if_action_needed(self.position, (w, h))
 
-    def say(self, msg, msgbox=None, pos=None, **oargs):
-        if msgbox is None:
-            msgbox = self.world.default_msgbox
+    def say(self, msg, **oargs):
         if self.name is not None:
             msg = self.name + ': ' + msg
-        MessageContainer(msgbox).show(self.head, msg, pos, **oargs)
+        oargs = oargs.copy()
+        oargs['head'] = self.head
+        self.world.show_message(msg, **oargs)
+
+    def ask(self, question, *answers, **oargs):
+        if self.name is not None:
+            question = self.name + ': ' + question
+        oargs = oargs.copy()
+        oargs['head'] = self.head
+        self.world.show_question(question, *answers, **oargs)
 
     def hide(self):
         self.visible = False

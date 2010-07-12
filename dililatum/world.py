@@ -33,7 +33,7 @@ from dililatum.object import Object
 from dililatum.place import Place
 from dililatum.font import Font
 from dililatum.sound import Sound
-from dililatum.msgbox import MessageBox
+from dililatum.msgbox import MessageBox, MessageContainer
 from dililatum.statusprinter import StatusPrinter
 from dililatum.various import thread
 
@@ -98,6 +98,8 @@ class World:
         self.keys_down = []
         self.screen_offset = [0, 0]
         self.screen_bars = [None, None]
+        self.keys_locked = False
+        self.event = {}
         self.sys.emit_signal('afterworldinit', self)
 
     def start(self):
@@ -111,15 +113,20 @@ class World:
 
         self.counters.append(TimeCounter(self.walking_speed, self.check_lead_walk))
 
-        pygame.mixer.pre_init(44100) # Sound files must be resampled
-                                     # to use this
-        pygame.init()
+        self.pygame_init()
         self.create_screen()
         self.fill_background((0, 0, 0))
         self.set_caption(self.sys.game.name)
 
         self.innerclock = pygame.time.Clock()
         self.sys.emit_signal('afterworldstart', self)
+
+    def pygame_init(self):
+        pygame.display.init()
+        pygame.font.init()
+        pygame.mixer.pre_init(44100) # Sound files must be resampled
+                                     # to 44.1 kHz
+        pygame.mixer.init()
 
     def load_image(self, path, alpha=False):
         p = os.path.abspath(path)
@@ -244,6 +251,12 @@ class World:
     def flip(self):
         pygame.display.flip()
 
+    def lock_keys(self):
+        self.keys_locked = True
+
+    def unlock_keys(self):
+        self.keys_locked = False
+
     def create_font(self, **oargs):
         return Font(self, **oargs)
 
@@ -273,6 +286,16 @@ class World:
         self.msgboxes.append(msgbox)
         self.sys.emit_signal('aftermsgboxadd', msgbox)
 
+    def show_message(self, msg, **oargs):
+        msgbox = oargs.get('msgbox') or self.default_msgbox
+        MessageContainer(msgbox).show_message(msg, **oargs)
+
+    def show_question(self, *args, **oargs):
+        msgbox = oargs.get('msgbox') or self.default_msgbox
+        oargs['pointer'] = msgbox.poimg
+        oargs['posize'] = msgbox.posize
+        MessageContainer(msgbox).show_question(*args, **oargs)
+
     def set_leading_character(self, char):
         self.leading_character = char
 
@@ -291,8 +314,11 @@ class World:
             except ValueError:
                 pass
 
-        self.leading_character_direction = \
-            self.get_value_of_key_dict(self.character_moving_keys)
+        if not self.keys_locked:
+            self.leading_character_direction = \
+                self.get_value_of_key_dict(self.character_moving_keys)
+        else:
+            self.leading_character_direction = None
 
     def get_value_of_key_dict(self, keydict):
         result = None
@@ -448,6 +474,8 @@ class World:
 
     def draw(self):
         self.screen.blit(self.bgsurface, (0, 0))
+        if self.current_place is None:
+            return
         self.current_place.draw()
 
         objs = self.characters[:]
@@ -487,6 +515,7 @@ class World:
             self.sys.emit_signal('beforegameloop', self)
 
             for event in pygame.event.get():
+                self.event[event.type] = event
                 self.sys.emit_event(event.type, event)
 
             for c in self.counters:

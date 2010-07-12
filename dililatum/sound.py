@@ -51,6 +51,9 @@ class Sound:
 
     def stop(self):
         self.world.sys.emit_signal('beforesoundstop', self, self.snd)
-        self.snd.stop()
+        try:
+            self.snd.stop()
+        except AttributeError:
+            pass
         self.is_playing = False
         self.world.sys.emit_signal('aftersoundstop', self, self.snd)

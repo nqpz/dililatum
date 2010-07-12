@@ -1,6 +1,7 @@
 def goto(event):
     game = event.args[0]
     sys = game.sys
+    sys.signalactions.clear('beforeworldrun')
     try:
         plcnum = int(sys.etc.arguments[0])
     except IndexError:

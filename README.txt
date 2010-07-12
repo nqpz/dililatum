@@ -72,4 +72,6 @@ games. These are named 'dilatiumdev*'.
 
 Documentation is available in the "docs" directory.
 
+Developers are very welcome.
+
 The original author of Dililatum is Niels Serup <ns@metanohi.org>.

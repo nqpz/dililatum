@@ -290,6 +290,10 @@ class GenericGame:
         self.world.add_msgbox(msgbox)
         return msgbox
 
+    def load_object(self, **oargs):
+        obj = self.world.create_object(**oargs)
+        return obj
+
     def load(self):
         pass
 
