@@ -1,1 +1,1 @@
-v0.1, today -- Initial release
+v0.1, July 12 2010 -- Initial release
