@@ -146,8 +146,8 @@ There is NO WARRANTY, to the extent permitted by law. See
         paths = []
         paths.append(os.path.join(os.path.dirname(fgame.__file__),
                                   self.game.datadir))
-        paths.append('/usr/local/share/forestquest/data')
-        paths.append('/usr/share/forestquest/data')
+        paths.append('/usr/local/share/%s/data' % module_name)
+        paths.append('/usr/share/%s/data' % module_name)
         for x in paths:
             if os.path.isdir(x):
                 os.chdir(x)
