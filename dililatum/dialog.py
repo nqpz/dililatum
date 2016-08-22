@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Dililatum: a quest system for simple RPGs
-# Copyright (C) 2010  Niels Serup
+# Copyright (C) 2010  Niels G. W. Serup
 
 # This file is part of Dililatum.
 #
@@ -20,7 +20,7 @@
 # along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
 ##[ Name        ]## dialog
-##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
+##[ Maintainer  ]## Niels G. W. Serup <ngws@metanohi.name>
 ##[ Description ]## Contains the Dialog class whose purpose is to
                   # contain text and menus and to be drawn onto the
                   # screen

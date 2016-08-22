@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Dililatum: a quest system for simple RPGs
-# Copyright (C) 2010  Niels Serup
+# Copyright (C) 2010  Niels G. W. Serup
 
 # This file is part of Dililatum.
 #
@@ -20,7 +20,7 @@
 # along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
 ##[ Name        ]## posmarker
-##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
+##[ Maintainer  ]## Niels G. W. Serup <ns@metanohi.org>
 ##[ Description ]## Contains the OKPositionsMarker class to aid in
                   # marking where on a background characters can
                   # safely walk

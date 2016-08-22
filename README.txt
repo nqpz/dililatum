@@ -1,3 +1,4 @@
+
 =========
 Dililatum
 =========
@@ -60,12 +61,12 @@ Details
 
 Dililatum is released under the GNU GPLv3+ and is free
 software. Dililatum is downloadable from
-http://metanohi.org/projects/dililatum/. The version of this
+http://metanohi.name/projects/dililatum/. The version of this
 Dililatum is v0.1. Many features are not complete yet.
 
 For an example of what Dililatum is capable of, try downloading
 ForestQuest. It's available at
-http://metanohi.org/projects/forestquest/. It's still a work in
+http://metanohi.name/projects/forestquest/. It's still a work in
 progress, but it works.
 
 The logo of Dililatum, found in the "logo" directory, is available
@@ -98,4 +99,27 @@ Documentation is available in the "docs" directory.
 
 Developers are very welcome.
 
-The original author of Dililatum is Niels Serup <ns@metanohi.org>.
+The original author of Dililatum is Niels G. W. Serup <ngws@metanohi.name>.
+
+
+Missing features/TODOs
+======================
+
+* The ability to have more than one layer of acceptable positions is
+  currently lacking from Dililatum. It should be possible to change
+  the ok-position-layer when the character did something, like
+  crossing an invisible line.
+* Code is lacking documentation.
+* There are no formats to make complex things like conversations easy
+  to create.
+* Lots of better graphics and sounds must be created.
+* An actual story must be created as well.
+* Functions for graphical effects should exist.
+* Probably also other things.
+
+The mantra should be something like "objects, actions, connections,
+graphics, sounds".
+
+
+This document has been released under the Creative Commons Zero 1.0
+Universal license.

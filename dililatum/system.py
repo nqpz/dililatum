@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Dililatum: a quest system for simple RPGs
-# Copyright (C) 2010  Niels Serup
+# Copyright (C) 2010  Niels G. W. Serup
 
 # This file is part of Dililatum.
 #
@@ -20,7 +20,7 @@
 # along with Dililatum.  If not, see <http://www.gnu.org/licenses/>.
 
 ##[ Name        ]## system
-##[ Maintainer  ]## Niels Serup <ns@metanohi.org>
+##[ Maintainer  ]## Niels G. W. Serup <ngws@metanohi.name>
 ##[ Description ]## Controls the general aspects of the engine
 
 import sys
@@ -85,7 +85,7 @@ class System:
 Dililatum is free software: you are free to change and redistribute it
 under the terms of the GNU GPL, version 3 or any later version.
 There is NO WARRANTY, to the extent permitted by law. See
-<http://metanohi.org/projects/dililatum/> for downloads and documentation.''')
+<http://metanohi.name/projects/dililatum/> for downloads and documentation.''')
 
         for f in self.etc.debugfiles:
             d = os.path.dirname(f)
