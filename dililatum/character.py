@@ -206,7 +206,7 @@ class Character:
             npos = [int(pos[i] + mov[i] * resize * scale *
                         self.world.size[i] / 100.0) for i in range(2)]
             mpos = self.world.current_place.char_pos(npos)
-            pos_ok = self.world.current_place.pos_ok(mpos, maxsize)
+            pos_ok = True # self.world.current_place.pos_ok(mpos, maxsize)
 
             scale -= .1
             if scale < 0.4:
