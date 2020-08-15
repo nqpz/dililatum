@@ -61,12 +61,12 @@ Details
 
 Dililatum is released under the GNU GPLv3+ and is free
 software. Dililatum is downloadable from
-http://metanohi.name/projects/dililatum/. The version of this
+https://github.com/nqpz/dililatum/. The version of this
 Dililatum is v0.1. Many features are not complete yet.
 
 For an example of what Dililatum is capable of, try downloading
 ForestQuest. It's available at
-http://metanohi.name/projects/forestquest/. It's still a work in
+https://github.com/nqpz/forestquest/. It's still a work in
 progress, but it works.
 
 The logo of Dililatum, found in the "logo" directory, is available
